@@ -13,7 +13,13 @@ to the underlying Google APIs.
 
 GAPI also simplifies the auth process for installed applications and akka-http based servers
 
-###Usage Example
+###Authenticate from a server
+
+###Authenticate from an installed application
+
+###Use Google Drive API
+
+
 
 ##TODO
 
