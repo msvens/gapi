@@ -28,6 +28,6 @@ trait CredentialListener extends CredentialRefreshListener{
   }
 
   override def onTokenErrorResponse(credential: Credential, tokenErrorResponse: JTokenErrorResponse): Unit = {
-    logger.error("token error: "+tokenErrorResponse.getError)
+    //logger.error("token error: "+tokenErrorResponse)
   }
 }

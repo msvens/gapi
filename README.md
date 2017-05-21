@@ -17,6 +17,8 @@ GAPI also simplifies the auth process for installed applications and akka-http b
 
 ### Authenticate from an installed application
 
+### Configuration
+
 ### Use Google Drive API
 
 

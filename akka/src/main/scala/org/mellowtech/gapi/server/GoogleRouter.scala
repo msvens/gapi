@@ -13,26 +13,28 @@ import akka.stream.Materializer
 import org.json4s.{DefaultFormats, native}
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.model.TokenResponse
-import org.mellowtech.gapi.store.{TokenDAO}
-
+import org.mellowtech.gapi.store.TokenDAO
 
 import scala.concurrent.{Await, ExecutionContext}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
   * @author msvens
   * @since 2017-05-12
   */
 
-trait GoogleAuthenticated{
+trait GoogleAuthenticated {
   def onAuthenticated(tr: TokenResponse): Unit
+
   def redirect: Option[String] = None
 }
 
-trait DefaultAuthenticated extends GoogleAuthenticated{
+trait DefaultAuthenticated extends GoogleAuthenticated {
+
   import scala.concurrent.duration._
 
   def tokenDAO: TokenDAO
+
   implicit def ec: ExecutionContext
 
   override def onAuthenticated(tr: TokenResponse): Unit = {
@@ -52,9 +54,14 @@ trait DefaultAuthenticated extends GoogleAuthenticated{
 
 }
 
-class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem, implicit val executor: ExecutionContext) extends GApiConfig{
+class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem, implicit val m: Materializer, implicit val executor: ExecutionContext) extends GApiConfig {
 
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
+
+  import Directives._
+  import de.heikoseeberger.akkahttpjson4s.Json4sSupport._
+  implicit val serialization = native.Serialization
+  implicit val formats = DefaultFormats
 
   private def authUrl(state: Option[String]): String = {
     val rUriEncode = URLEncoder.encode(redirectUri, "UTF-8")
@@ -67,68 +74,52 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
     }
   }
 
-  val authPath: String = "auth"
-
-
-  def route(implicit m: Materializer): Route = {
-
-    import Directives._
-
-    import de.heikoseeberger.akkahttpjson4s.Json4sSupport._
-    implicit val serialization = native.Serialization
-    implicit val formats = DefaultFormats
-
-    pathPrefix(authPath) {
-      pathEndOrSingleSlash {
-        get{
-          log.debug("redirect to google oauth")
-          redirect(authUrl(Some("some state")), StatusCodes.SeeOther)
-        }
-      }
-    } ~
-    pathPrefix("authCallback") {
-      pathEndOrSingleSlash {
-        get{
-          parameter("code") (code => {
-            log.debug(s"got code from google...http request to $tokenEndPoint")
-            //val uri = "https://www.googleapis.com/oauth2/v4/token"
-            val params: Map[String,String] = Map(
-              "code" -> code,
-              "client_id" -> clientId,
-              "client_secret" -> clientSecret,
-              "redirect_uri" -> redirectUri,
-              "grant_type" -> "authorization_code"
-            )
-            val formData = FormData(params).toEntity
-            val request = HttpRequest(method = HttpMethods.POST, uri = tokenEndPoint, entity = formData)
-            val f = for {
-              r <- Http().singleRequest(request)
-              tr <- Unmarshal(r.entity).to[TokenResponse]
-              //updated <- tokenDAO.get.put(toToken(tr)) if tokenDAO.isDefined
-            } yield{
-              callback.onAuthenticated(tr)
-              tr
-            }
-
-            onComplete(f) {
-              case Success(r) => {
-                log.debug("successful authentication")
-                callback.redirect match {
-                  case None => complete("success")
-                  case Some(r) => redirect(r, StatusCodes.PermanentRedirect)
-                }
-                //complete("success")
-              }
-              case Failure(e) => {
-                log.error(e, "could not authenticate")
-                complete(StatusCodes.InternalServerError)}
-            }
-          })
-        }
+  val authRoute: Route =
+    path(authPath) {
+      get{
+        log.debug("redirect to google oauth")
+        redirect(authUrl(Some("some state")), StatusCodes.SeeOther)
       }
     }
+
+  val authCallbackRoute: Route =
+    path(authCallbackPath) {
+      get {
+        parameter("code")(code => {
+          log.debug(s"got code from google...http request to $tokenEndPoint")
+          val params: Map[String, String] = Map(
+            "code" -> code,
+            "client_id" -> clientId,
+            "client_secret" -> clientSecret,
+            "redirect_uri" -> redirectUri,
+            "grant_type" -> "authorization_code"
+          )
+          val formData = FormData(params).toEntity
+          val request = HttpRequest(method = HttpMethods.POST, uri = tokenEndPoint, entity = formData)
+          val f = for {
+            r <- Http().singleRequest(request)
+            tr <- Unmarshal(r.entity).to[TokenResponse]
+          } yield {
+            callback.onAuthenticated(tr)
+            tr
+          }
+          onComplete(f)(onAuthCompleted(_))
+        })
+      }
+    }
+
+  val route: Route = authRoute ~ authCallbackRoute
+
+  def onAuthCompleted(tr: Try[TokenResponse]): Route = tr match {
+    case Success(r) =>
+      log.debug("successful authentication")
+      callback.redirect match {
+        case None => complete("success")
+        case Some(r) => redirect(r, StatusCodes.PermanentRedirect)
+      }
+    case Failure(e) =>
+      log.error(e, "could not authenticate")
+      throw e
   }
-
-
 
 }

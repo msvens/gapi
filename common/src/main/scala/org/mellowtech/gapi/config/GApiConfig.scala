@@ -22,6 +22,8 @@ trait GApiConfig {
   val redirectUri = google.getString("redirect_uri")
   val accessType = google.getString("access_type")
   val scopes = google.getString("scopes")
+  val authPath = google.getString("authPath")
+  val authCallbackPath = google.getString("authCallbackPath")
   //val redirectAfterAuth = google.getString("redirectAfterAuth")
 
 }

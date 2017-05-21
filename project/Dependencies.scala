@@ -13,7 +13,7 @@ object Dependencies {
   val slf4j = "org.slf4j" % "slf4j-api" % "1.7.16"
   val logback ="ch.qos.logback" % "logback-classic" % "1.2.3"
 
-  val commonAPIs = Seq(typesafeConf,slf4j,logback)
+  val commonAPIs = Seq(typesafeConf,slf4j)
 
   //for testing
   val junit = "junit" % "junit" % "4.12" % "test"

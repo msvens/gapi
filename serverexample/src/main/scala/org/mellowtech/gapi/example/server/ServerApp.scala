@@ -20,13 +20,12 @@ import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Success
+//import scala.util.{Failure, Success}
 
 class ServerCallback(val tokenDAO: TokenDAO)(implicit val ec: ExecutionContext) extends DefaultAuthenticated with CredentialListener {
 
-  var gdrive: Option[DriveService] = None
-
   val hasDrive: AtomicBoolean = new AtomicBoolean(false)
+  var gdrive: Option[DriveService] = None
 
 
 }
@@ -46,6 +45,19 @@ object ServerApp extends GApiConfig {
   val tokenDAO = new TokenDAO(dbService)
   val serverCallback = new ServerCallback(tokenDAO)
   val gAuth = new GoogleRouter(serverCallback)
+  val gApiExceptionHandler = ExceptionHandler {
+    case x: GApiException =>
+      extractUri { uri =>
+        log.error(s"Request to $uri could not be handled normally")
+        complete(HttpResponse(StatusCodes.InternalServerError, entity = "" + x.jsonError.getOrElse("no json error")))
+      }
+  }
+
+  def main(args: Array[String]): Unit = {
+
+    initGoogleServices
+    Http().bindAndHandle(route ~ gAuth.route, httpHost, httpPort)
+  }
 
   def initGoogleServices: Unit = {
     //First try to create a drive-service if we already have credentials
@@ -65,35 +77,6 @@ object ServerApp extends GApiConfig {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-
-    initGoogleServices
-    Http().bindAndHandle(route ~ gAuth.route, httpHost, httpPort)
-  }
-
-  def toUtf(t: String): Route = {
-    complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, t))
-  }
-
-  val gApiExceptionHandler = ExceptionHandler {
-    case x: GApiException =>
-      extractUri { uri =>
-        log.error(s"Request to $uri could not be handled normally")
-        complete(HttpResponse(StatusCodes.InternalServerError, entity = "" + x.jsonError.get))
-      }
-  }
-
-  def driveRoute(implicit m: Materializer): Route = handleExceptions(null) {
-    //import Directives._
-    pathPrefix("drive") {
-      pathEndOrSingleSlash {
-        get {
-          toUtf(Pages.driveListing.render)
-        }
-      }
-    }
-  }
-
   def route(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
 
     validate(serverCallback.hasDrive.get(), "no drive needs auth") {
@@ -106,17 +89,42 @@ object ServerApp extends GApiConfig {
         pathPrefix("google") {
           log.debug("in the google branch")
           pathEndOrSingleSlash {
-            get {
-
-              val gdrive = serverCallback.gdrive.get
-              val fa = gdrive.aboutAll
-              onComplete(fa) {
-                case Success(a) => complete(a.user.get.displayName)
-              }
-            }
-          }
+            get(toUtf(Pages.googleListing.render))
+          } ~ driveRoute
         }
     }
+  }
+
+  def driveRoute(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
+    //import Directives._
+    pathPrefix("drive") {
+      pathEndOrSingleSlash {
+        get(toUtf(Pages.driveListing.render))
+      } ~
+      path("about") {
+        val gdrive = serverCallback.gdrive.get
+        val fa = gdrive.aboutAll
+        onSuccess(fa) {a => complete(a.user.get.displayName)
+
+        }
+        /*onComplete(fa) {
+          case Success(a) => complete(a.user.get.displayName)
+          //case Failure(e) => complete(StatusCodes.InternalServerError)
+        }*/
+      } ~
+      path("list") {
+        val gdrive = serverCallback.gdrive.get
+        val fa = for {
+          r <- gdrive.root
+          l <- gdrive.list(r)
+        } yield (l)
+        onSuccess(fa) (a => toUtf(Pages.listFiles(a).render))
+      }
+    }
+  }
+
+  def toUtf(t: String): Route = {
+    complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, t))
   }
 
 
