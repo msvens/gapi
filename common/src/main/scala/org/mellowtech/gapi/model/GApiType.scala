@@ -6,8 +6,9 @@ trait GApiType
 
 case class TokenResponse(access_token: String,
                          token_type: String,
-                         expires_in: Long,
-                         refresh_token: Option[String]) extends GApiType
+                         expires_in: Int,
+                         refresh_token: Option[String] = None) extends GApiType
+
 
 case class ErrorInfo(domain: Option[String] = None,
                     location: Option[String] = None,
@@ -40,7 +41,7 @@ object Converters{
     val jt = new JTokenResponse()
     jt.setAccessToken(tr.access_token)
     jt.setTokenType(tr.token_type)
-    jt.setExpiresInSeconds(tr.expires_in)
+    jt.setExpiresInSeconds(tr.expires_in.toLong)
     if(tr.refresh_token.isDefined) jt.setRefreshToken(tr.refresh_token.get)
     jt
   }

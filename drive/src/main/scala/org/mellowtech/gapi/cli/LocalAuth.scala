@@ -10,7 +10,6 @@ import com.google.api.client.http.HttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.drive.Drive
-import org.mellowtech.gapi.Config
 import org.mellowtech.gapi.drive.DriveService
 import org.mellowtech.gapi.service.GApiException
 
@@ -21,8 +20,9 @@ import scala.util.{Failure, Success}
   * @author msvens
   * @since 2017-05-06
   */
-object LocalAuth extends App with Config{
+object LocalAuth extends App{
 
+  /*
   import scala.concurrent.duration._
 
   implicit val ec = ExecutionContext.global
@@ -81,6 +81,7 @@ object LocalAuth extends App with Config{
   } catch {
     case e: Exception => e.printStackTrace()
   }
+  */
 
 
 

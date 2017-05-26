@@ -19,6 +19,7 @@ trait GApiConfig {
   val tokenEndPoint = google.getString("tokenEndPoint")
   val clientId = google.getString("client_id")
   val clientSecret = google.getString("client_secret")
+  val applicationName = google.getString("applicationName")
   val redirectUri = google.getString("redirect_uri")
   val accessType = google.getString("access_type")
   val scopes = google.getString("scopes")

@@ -9,9 +9,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusC
 import akka.http.scaladsl.server.{Directives, ExceptionHandler, Route}
 import akka.stream.{ActorMaterializer, Materializer}
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.http.HttpTransport
-import com.google.api.client.json.jackson2.JacksonFactory
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.DriveService
 import org.mellowtech.gapi.server.{DefaultAuthenticated, GoogleHelper, GoogleRouter}
@@ -20,7 +17,6 @@ import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-//import scala.util.{Failure, Success}
 
 class ServerCallback(val tokenDAO: TokenDAO)(implicit val ec: ExecutionContext) extends DefaultAuthenticated with CredentialListener {
 
@@ -33,13 +29,12 @@ class ServerCallback(val tokenDAO: TokenDAO)(implicit val ec: ExecutionContext) 
 object ServerApp extends GApiConfig {
 
   import Directives._
+  import org.mellowtech.gapi.GApiImplicits._
 
   implicit val actorSystem = ActorSystem()
   implicit val executor: ExecutionContext = actorSystem.dispatcher
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val httpTransport: HttpTransport = GoogleNetHttpTransport.newTrustedTransport()
-  implicit val jsonFactory = JacksonFactory.getDefaultInstance
 
   val dbService = new DbService
   val tokenDAO = new TokenDAO(dbService)
@@ -51,6 +46,9 @@ object ServerApp extends GApiConfig {
         log.error(s"Request to $uri could not be handled normally")
         complete(HttpResponse(StatusCodes.InternalServerError, entity = "" + x.jsonError.getOrElse("no json error")))
       }
+    case z =>
+      log.error(z, "exception")
+      complete(StatusCodes.InternalServerError)
   }
 
   def main(args: Array[String]): Unit = {
@@ -70,7 +68,7 @@ object ServerApp extends GApiConfig {
     val cred = Await.result(f, 1 seconds)
     cred match {
       case Some(c) => {
-        serverCallback.gdrive = Some(DriveService(c, "brfapp"))
+        serverCallback.gdrive = Some(DriveService(c))
         serverCallback.hasDrive.set(true)
       }
       case None => serverCallback.gdrive = None
@@ -104,13 +102,7 @@ object ServerApp extends GApiConfig {
       path("about") {
         val gdrive = serverCallback.gdrive.get
         val fa = gdrive.aboutAll
-        onSuccess(fa) {a => complete(a.user.get.displayName)
-
-        }
-        /*onComplete(fa) {
-          case Success(a) => complete(a.user.get.displayName)
-          //case Failure(e) => complete(StatusCodes.InternalServerError)
-        }*/
+        onSuccess(fa) {a => complete(a.user.get.displayName)}
       } ~
       path("list") {
         val gdrive = serverCallback.gdrive.get
@@ -119,6 +111,13 @@ object ServerApp extends GApiConfig {
           l <- gdrive.list(r)
         } yield (l)
         onSuccess(fa) (a => toUtf(Pages.listFiles(a).render))
+      } ~
+      path("file") {
+        parameter("name")(name => {
+          val gdrive = serverCallback.gdrive.get
+          val fa = gdrive.createDocument(name, Nil)
+          onSuccess(fa) (a => complete("file created "+a.name))
+        })
       }
     }
   }

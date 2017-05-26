@@ -10,10 +10,10 @@ object Dependencies {
 
 
   //logging
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.16"
+  //val slf4j = "org.slf4j" % "slf4j-api" % "1.7.16"
   val logback ="ch.qos.logback" % "logback-classic" % "1.2.3"
 
-  val commonAPIs = Seq(typesafeConf,slf4j)
+  val commonAPIs = Seq(typesafeConf,logback)
 
   //for testing
   val junit = "junit" % "junit" % "4.12" % "test"
@@ -23,10 +23,10 @@ object Dependencies {
 
   //google related
 
-  val json4s = "org.json4s" %% "json4s-native" % json4sVersion
-  val json4sext = "org.json4s" %% "json4s-ext" % json4sVersion
-
-  val jsonDeps = Seq(json4s, json4sext)
+  //val json4s = "org.json4s" %% "json4s-native" % json4sVersion
+  //val json4sext = "org.json4s" %% "json4s-ext" % json4sVersion
+  val upickle = "com.lihaoyi" %% "upickle" % "0.4.4"
+  val jsonDeps = Seq(upickle)
 
   //google apis
   val driveAPI = "com.google.apis" % "google-api-services-drive" % "v3-rev72-1.22.0"
@@ -38,7 +38,7 @@ object Dependencies {
   //akka-http apis
 
   val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % "2.4.17"
-  val akkaHttp = "de.heikoseeberger" %% "akka-http-json4s" % "1.16.0"
+  val akkaHttp = "de.heikoseeberger" %% "akka-http-upickle" % "1.16.0"
 
   val akkaAPIs = Seq(akkaHttp, akkaSlf4j)
 

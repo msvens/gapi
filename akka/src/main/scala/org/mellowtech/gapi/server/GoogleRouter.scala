@@ -10,7 +10,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.json4s.{DefaultFormats, native}
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.model.TokenResponse
 import org.mellowtech.gapi.store.TokenDAO
@@ -59,9 +58,8 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
 
   import Directives._
-  import de.heikoseeberger.akkahttpjson4s.Json4sSupport._
-  implicit val serialization = native.Serialization
-  implicit val formats = DefaultFormats
+  import de.heikoseeberger.akkahttpupickle.UpickleSupport._
+  import upickle.default._
 
   private def authUrl(state: Option[String]): String = {
     val rUriEncode = URLEncoder.encode(redirectUri, "UTF-8")

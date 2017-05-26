@@ -28,8 +28,8 @@ object Pages {
       body(
         h1("Try Drive Functions"),
         ul(
-          li(a(href:="google/drive/about","About")),
-          li(a(href:="google/drive/list", "List Files"))
+          li(a(href:="/google/drive/about","About")),
+          li(a(href:="/google/drive/list", "List Files"))
         )
       )
     )
