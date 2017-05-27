@@ -53,7 +53,7 @@ trait DefaultAuthenticated extends GoogleAuthenticated {
 
 }
 
-class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem, implicit val m: Materializer, implicit val executor: ExecutionContext) extends GApiConfig {
+class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem, implicit val m: Materializer, implicit val executor: ExecutionContext, implicit val c: GApiConfig)  {
 
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
 
@@ -62,10 +62,10 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
   import upickle.default._
 
   private def authUrl(state: Option[String]): String = {
-    val rUriEncode = URLEncoder.encode(redirectUri, "UTF-8")
-    val scopesEncode = URLEncoder.encode(scopes, "UTF-8")
-    val aUrl = oauthEndPoint + "?client_id=" + clientId + "&redirect_uri=" + rUriEncode + "&response_type=code" +
-      "&scope=" + scopesEncode + "&access_type=" + accessType
+    val rUriEncode = URLEncoder.encode(c.redirectUri.get, "UTF-8")
+    val scopesEncode = URLEncoder.encode(c.scopes, "UTF-8")
+    val aUrl = c.oauthEndPoint.get + "?client_id=" + c.clientId + "&redirect_uri=" + rUriEncode + "&response_type=code" +
+      "&scope=" + scopesEncode + "&access_type=" + c.accessType.get
     state match {
       case Some(s) => aUrl + "&state=" + URLEncoder.encode(s, "UTF-8")
       case None => aUrl
@@ -73,7 +73,7 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
   }
 
   val authRoute: Route =
-    path(authPath) {
+    path(c.authPath.get) {
       get{
         log.debug("redirect to google oauth")
         redirect(authUrl(Some("some state")), StatusCodes.SeeOther)
@@ -81,19 +81,19 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
     }
 
   val authCallbackRoute: Route =
-    path(authCallbackPath) {
+    path(c.authCallbackPath.get) {
       get {
         parameter("code")(code => {
-          log.debug(s"got code from google...http request to $tokenEndPoint")
+          log.debug(s"got code from google...http request to ${c.tokenEndPoint.get}")
           val params: Map[String, String] = Map(
             "code" -> code,
-            "client_id" -> clientId,
-            "client_secret" -> clientSecret,
-            "redirect_uri" -> redirectUri,
+            "client_id" -> c.clientId,
+            "client_secret" -> c.clientSecret,
+            "redirect_uri" -> c.redirectUri.get,
             "grant_type" -> "authorization_code"
           )
           val formData = FormData(params).toEntity
-          val request = HttpRequest(method = HttpMethods.POST, uri = tokenEndPoint, entity = formData)
+          val request = HttpRequest(method = HttpMethods.POST, uri = c.tokenEndPoint.get, entity = formData)
           val f = for {
             r <- Http().singleRequest(request)
             tr <- Unmarshal(r.entity).to[TokenResponse]

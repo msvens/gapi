@@ -2,8 +2,6 @@ package org.mellowtech.gapi.drive
 
 
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.http.HttpTransport
-import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.drive.Drive
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.model.{About, File, FileList}
@@ -23,14 +21,14 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param credential
   * @param ec
   */
-class DriveService(val credential: Credential)(implicit val ec: ExecutionContext) extends GService[Drive] with GApiConfig{
+class DriveService(val credential: Credential)(implicit val ec: ExecutionContext, c: GApiConfig) extends GService[Drive]{
 
   import org.mellowtech.gapi.drive.model.DriveConverters._
   import Operators._
   import org.mellowtech.gapi.GApiImplicits._
 
   val drive: Drive = new Drive.Builder(httpTransport, jsonFactory,
-    credential).setApplicationName(applicationName).build()
+    credential).setApplicationName(c.applicationName).build()
 
   val service = drive
 
@@ -62,6 +60,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     val cf = drive.files.create(f).execute()
     cf.asScala
   }
+
 
   def list(parent: File): Future[FileList] = list(parent.id.get)
 
@@ -113,6 +112,8 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     execA(fl.execute().asScala)
   }
 
+
+
 }
 
 object DriveService{
@@ -123,6 +124,6 @@ object DriveService{
   val GPRESENTATION = "application/vnd.google-apps.presentation"
 
 
-  def apply(credential: Credential)(implicit ec: ExecutionContext): DriveService = new DriveService(credential)
+  def apply(credential: Credential)(implicit ec: ExecutionContext, c: GApiConfig): DriveService = new DriveService(credential)
 
 }

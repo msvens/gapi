@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.{Directives, ExceptionHandler, Route}
 import akka.stream.{ActorMaterializer, Materializer}
 import com.google.api.client.auth.oauth2.Credential
 import org.mellowtech.gapi.config.GApiConfig
-import org.mellowtech.gapi.drive.DriveService
+import org.mellowtech.gapi.drive.{Clause, DriveService}
 import org.mellowtech.gapi.server.{DefaultAuthenticated, GoogleHelper, GoogleRouter}
 import org.mellowtech.gapi.service.GApiException
 import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO}
@@ -26,7 +26,7 @@ class ServerCallback(val tokenDAO: TokenDAO)(implicit val ec: ExecutionContext) 
 
 }
 
-object ServerApp extends GApiConfig {
+object ServerApp{
 
   import Directives._
   import org.mellowtech.gapi.GApiImplicits._
@@ -35,6 +35,7 @@ object ServerApp extends GApiConfig {
   implicit val executor: ExecutionContext = actorSystem.dispatcher
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
   implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val conf: GApiConfig = GApiConfig()
 
   val dbService = new DbService
   val tokenDAO = new TokenDAO(dbService)
@@ -54,7 +55,7 @@ object ServerApp extends GApiConfig {
   def main(args: Array[String]): Unit = {
 
     initGoogleServices
-    Http().bindAndHandle(route ~ gAuth.route, httpHost, httpPort)
+    Http().bindAndHandle(route ~ gAuth.route, conf.httpHost.get, conf.httpPort.get)
   }
 
   def initGoogleServices: Unit = {
@@ -95,6 +96,7 @@ object ServerApp extends GApiConfig {
 
   def driveRoute(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
     //import Directives._
+    import org.mellowtech.gapi.drive.Operators._
     pathPrefix("drive") {
       pathEndOrSingleSlash {
         get(toUtf(Pages.driveListing.render))
@@ -105,12 +107,19 @@ object ServerApp extends GApiConfig {
         onSuccess(fa) {a => complete(a.user.get.displayName)}
       } ~
       path("list") {
-        val gdrive = serverCallback.gdrive.get
-        val fa = for {
-          r <- gdrive.root
-          l <- gdrive.list(r)
-        } yield (l)
-        onSuccess(fa) (a => toUtf(Pages.listFiles(a).render))
+        parameter('next.?, 'parent.?) {(next,parent) =>
+          val gdrive = serverCallback.gdrive.get
+          val fa = next match {
+            case Some(n) => for{
+              l <- gdrive.list(Some(Clause(parents in parent.get)), Some(10), None, next, None)
+            } yield(Pages.listFiles(l, parent.get))
+            case None => for {
+              r <- gdrive.root
+              l <- gdrive.list(Some(Clause(parents in r.id.get)), Some(10), None, None, None)
+            } yield (Pages.listFiles(l,r.id.get))
+          }
+          onSuccess(fa)(a => toUtf(a.render))
+        }
       } ~
       path("file") {
         parameter("name")(name => {

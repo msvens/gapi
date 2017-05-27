@@ -13,28 +13,22 @@ import org.mellowtech.gapi.store.{CredentialListener, Token, TokenDAO}
   * @author Martin Svensson
   * @since 2017-05-14
   */
-object GoogleHelper extends GApiConfig{
+object GoogleHelper{
 
   def credential(tr: TokenResponse, factory: Option[JsonFactory], transport: Option[HttpTransport],
-                 listener: Option[CredentialListener]): Credential =
+                 listener: Option[CredentialListener])(implicit c: GApiConfig): Credential =
     credential(tr.access_token, tr.expires_in, tr.refresh_token, factory, transport, listener)
-  /*tr.refresh_token match {
-    case Some(_) => {
-      new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
-        .setTransport(transport.get)
-      .setJsonFactory(factory.get)
-      .setTokenServerUrl(new GenericUrl(tokenEndPoint))
-      .build().setFromTokenResponse(Converters.toJava(tr))
-    }
-    case None => new Credential(BearerToken.authorizationHeaderAccessMethod()).setFromTokenResponse(Converters.toJava(tr))
-  }*/
 
   def credential(t: Token, factory: Option[JsonFactory] = None, transport: Option[HttpTransport] = None,
-                 listener: Option[CredentialListener] = None): Credential =
+                 listener: Option[CredentialListener] = None)(implicit c: GApiConfig): Credential =
     credential(t.access_token, TokenDAO.expiresInSecs(t.expires_in), t.refresh_token, factory, transport, listener)
 
-  def credential(access_token: String, expires_in: Long, refresh_token: Option[String],
-                 factory: Option[JsonFactory], transport: Option[HttpTransport], listener: Option[CredentialListener]): Credential = refresh_token match {
+  def credential(access_token: String,
+                 expires_in: Long,
+                 refresh_token: Option[String],
+                 factory: Option[JsonFactory],
+                 transport: Option[HttpTransport],
+                 listener: Option[CredentialListener])(implicit c: GApiConfig): Credential = refresh_token match {
     case None => new Credential(BearerToken.authorizationHeaderAccessMethod())
       .setAccessToken(access_token)
       .setExpiresInSeconds(expires_in)
@@ -42,8 +36,8 @@ object GoogleHelper extends GApiConfig{
       val builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
         .setTransport(transport.get)
         .setJsonFactory(factory.get)
-        .setTokenServerUrl(new GenericUrl(tokenEndPoint))
-        .setClientAuthentication(new ClientParametersAuthentication(clientId,clientSecret))
+        .setTokenServerUrl(new GenericUrl(c.tokenEndPoint.get))
+        .setClientAuthentication(new ClientParametersAuthentication(c.clientId,c.clientSecret))
         if(listener.isDefined) builder.addRefreshListener(listener.get)
         builder.build().setAccessToken(access_token).setRefreshToken(r).setExpiresInSeconds(expires_in)
     }

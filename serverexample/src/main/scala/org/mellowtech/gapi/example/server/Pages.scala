@@ -34,7 +34,7 @@ object Pages {
       )
     )
 
-  def listFiles(fl: FileList) =
+  def listFiles(fl: FileList, id: String) =
     html(
       head(),
       body(
@@ -43,7 +43,11 @@ object Pages {
           for(f <- fl.files.get) yield {
             li(f.name.getOrElse("no name")+" ("+f.mimeType.getOrElse("no type")+")")
           }
-        )
+        ),
+        if(fl.nextPageToken.isDefined)
+          a(href:="/google/drive/list?next="+fl.nextPageToken.get+"&parent="+id, "Next 10 hits")
+        else
+          a(href:="/google/drive/list", "Start over")
 
       )
     )
