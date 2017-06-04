@@ -22,6 +22,12 @@ trait GService[A] {
       case e: Throwable => throw Converters.toGApiException(e)
     }
   }
+
+  def execU(e: => Unit): Future[Unit] = {
+    Future(e) recover {
+      case e: Throwable => throw Converters.toGApiException(e)
+    }
+  }
 }
 
 

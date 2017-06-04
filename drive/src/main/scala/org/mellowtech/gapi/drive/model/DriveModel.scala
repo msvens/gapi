@@ -1,6 +1,7 @@
 package org.mellowtech.gapi.drive.model
 
 import com.google.api.client.util.DateTime
+import org.mellowtech.gapi.drive.DriveService
 import org.mellowtech.gapi.model.GApiType
 
 case class StorageQuota(limit: Option[Long] = None,
@@ -156,7 +157,10 @@ case class File(appProperties: Option[scala.collection.Map[String, String]] = No
                 viewersCanCopyContent: Option[Boolean] = None,
                 webContentLink: Option[String] = None,
                 webViewLink: Option[String] = None,
-                writersCanShare: Option[Boolean] = None) extends GApiType
+                writersCanShare: Option[Boolean] = None) extends GApiType {
+
+  def isFolder: Boolean = mimeType.getOrElse("notype").equals(DriveService.GFOLDER)
+}
 
 case class FileList(files: Option[Seq[File]] = None,
                     incompleteSearch: Option[Boolean] = None,

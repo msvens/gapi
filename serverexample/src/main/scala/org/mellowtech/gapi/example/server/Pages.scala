@@ -22,14 +22,27 @@ object Pages {
 
   val driveListing =
     html(
-      head(
-
-      ),
+      head(),
       body(
         h1("Try Drive Functions"),
         ul(
           li(a(href:="/google/drive/about","About")),
+          li(a(href:="/google/drive/upload","Upload File")),
           li(a(href:="/google/drive/list", "List Files"))
+        )
+      )
+    )
+
+  val uploadFile =
+    html(
+      head(),
+      body(
+        h1("Fill in the form to create your new text file"),
+        form(action:="/google/drive/upload", method:="post",
+          "File text",br,
+          input(`type`:="text",name:="filename",value:="<name file>"),br,br,
+          input(`type`:="text",name:="filecontent",value:="<file content>"),br,br,
+          input(`type`:="submit", value:="create")
         )
       )
     )
@@ -38,10 +51,16 @@ object Pages {
     html(
       head(),
       body(
-        h1("Listing Files"),
+        h1("Listing Files" +
+          ""),
         ul(
           for(f <- fl.files.get) yield {
-            li(f.name.getOrElse("no name")+" ("+f.mimeType.getOrElse("no type")+")")
+            val id = f.id.get
+            if(f.isFolder){
+              li(a(href:="/google/drive/list?parent="+id, f.name.get+" (folder)"))
+            } else {
+              li(a(href:="/google/drive/files/"+id, f.name.get))
+            }
           }
         ),
         if(fl.nextPageToken.isDefined)

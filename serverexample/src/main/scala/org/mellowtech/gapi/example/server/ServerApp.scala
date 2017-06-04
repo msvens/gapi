@@ -106,10 +106,24 @@ object ServerApp{
         val fa = gdrive.aboutAll
         onSuccess(fa) {a => complete(a.user.get.displayName)}
       } ~
+      path("upload") {
+        get{
+          toUtf(Pages.uploadFile.render)
+        } ~
+        post {
+          formFields('filename,'filecontent){(fn,fc) =>
+            val gdrive = serverCallback.gdrive.get
+            val ff = gdrive.upload(fc, fn, "text/plain")
+            onSuccess(ff)(f => redirect("/google/drive/files/"+f.id.get, StatusCodes.SeeOther))
+            //onSuccess(ff)(f => complete("created file: "+f.id))
+
+          }
+        }
+      } ~
       path("list") {
         parameter('next.?, 'parent.?) {(next,parent) =>
           val gdrive = serverCallback.gdrive.get
-          val fa = next match {
+          val fa = parent match {
             case Some(n) => for{
               l <- gdrive.list(Some(Clause(parents in parent.get)), Some(10), None, next, None)
             } yield(Pages.listFiles(l, parent.get))

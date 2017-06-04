@@ -1,7 +1,12 @@
 package org.mellowtech.gapi.drive
 
 
+import java.io.{InputStream, OutputStream}
+import java.nio.file.Path
+
 import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.http.{ByteArrayContent, FileContent, InputStreamContent}
+import com.google.api.client.util.ByteArrayStreamingContent
 import com.google.api.services.drive.Drive
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.model.{About, File, FileList}
@@ -31,10 +36,15 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     credential).setApplicationName(c.applicationName).build()
 
   val service = drive
+  val createFolder: (String,Seq[String]) => Future[File] = create(DriveService.GFOLDER)
+  val createDocument: (String,Seq[String]) => Future[File] = create(DriveService.GDOCUMENT)
+  val createSheet: (String,Seq[String]) => Future[File] = create(DriveService.GSHEET)
+  val createPresentation: (String,Seq[String]) => Future[File] = create(DriveService.GPRESENTATION)
 
   def aboutAll: Future[About] = {
     about(AboutFields.aboutFields: _*)
   }
+
   def about(fields: String*): Future[About] = {
     execA[About] {
       val exec = drive.about.get.setFields(fields.mkString(","))
@@ -47,15 +57,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     f.asScala
   }
 
-
-
-  val createFolder: (String,Seq[String]) => Future[File] = createFile(DriveService.GFOLDER)
-  val createDocument: (String,Seq[String]) => Future[File] = createFile(DriveService.GDOCUMENT)
-  val createSheet: (String,Seq[String]) => Future[File] = createFile(DriveService.GSHEET)
-  val createPresentation: (String,Seq[String]) => Future[File] = createFile(DriveService.GPRESENTATION)
-
-
-  def createFile(mimeType: String)(name: String, parentIds: Seq[String]): Future[File] = execA{
+  def create(mimeType: String)(name: String, parentIds: Seq[String]): Future[File] = execA{
     val f = toGoogleFile(name, parentIds, mimeType)
     val cf = drive.files.create(f).execute()
     cf.asScala
@@ -94,7 +96,6 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
       else
         fields += "files("+fileFields.get.mkString(",")+")"
     }
-
   })
 
   /** list files
@@ -112,7 +113,41 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     execA(fl.execute().asScala)
   }
 
+  def export(to: OutputStream, mimeType: String, id: String): Future[Unit] = execU{
+    drive.files().export(id, mimeType).executeMediaAndDownloadTo(to)
+  }
 
+  def download(to: OutputStream, id: String, range: Some[(Int,Int)]): Future[Unit] = execU{
+    val d = drive.files().get(id)
+    if(range.isDefined)
+      d.getRequestHeaders.setRange("bytes="+range.get._1+"-"+range.get._2)
+    d.executeMediaAndDownloadTo(to)
+  }
+
+  def upload[T](content: T, name: String, mimeType: String, parentId: Option[String] = None,
+             convertTo: Option[String] = None): Future[File] = {
+
+    import com.google.api.services.drive.model.{File => GFile}
+
+    val mc = content match {
+      case x: Path => new FileContent(mimeType, x.toFile)
+      case x: java.io.File => new FileContent(mimeType, x)
+      case x: Array[Byte] => new ByteArrayContent(mimeType,x)
+      case x: InputStream => new InputStreamContent(mimeType,x)
+      case x => {
+        val b = x.toString.getBytes("UTF-8")
+        new ByteArrayContent(mimeType, b)
+      }
+    }
+    val file = new GFile
+    file.setName(name)
+    if(parentId.isDefined)
+      file.setParents(java.util.Collections.singletonList(parentId.get))
+    if(convertTo.isDefined)
+      file.setMimeType(convertTo.get)
+    val create = drive.files().create(file,mc).setFields("id")
+    execA(create.execute().asScala)
+  }
 
 }
 
@@ -122,6 +157,8 @@ object DriveService{
   val GSHEET = "application/vnd.google-apps.spreadsheet"
   val GDOCUMENT = "application/vnd.google-apps.document"
   val GPRESENTATION = "application/vnd.google-apps.presentation"
+
+
 
 
   def apply(credential: Credential)(implicit ec: ExecutionContext, c: GApiConfig): DriveService = new DriveService(credential)
