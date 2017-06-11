@@ -1,10 +1,14 @@
 package org.mellowtech.gapi.example.server
 
 
-import org.mellowtech.gapi.drive.model.FileList
 
-import scalatags.Text.TypedTag
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Query
+import com.google.api.services.drive.model.{File, FileList}
+import org.mellowtech.gapi.drive.DriveService
+
 import scalatags.Text.all._
+import scala.collection.JavaConverters._
 
 object Pages {
 
@@ -47,27 +51,50 @@ object Pages {
       )
     )
 
-  def listFiles(fl: FileList, id: String) =
+  def file(f: File) = {
+    html(
+      head(),
+      body(
+        h2(f.getName),
+        ul(
+          li("mime type: "+f.getMimeType),
+          li(""+f.getCreatedTime),
+          li("is folder: "+DriveService.isFolder(f)),
+          li(a(href:="/google/drive/files/"+f.getId+"/raw","raw view")),
+          if(f.getWebContentLink != null) li(a(href:=f.getWebContentLink, "web content link")) else (),
+          if(f.getWebViewLink != null) li(a(href:=f.getWebViewLink, "web view link")) else ()
+        )
+      )
+    )
+  }
+
+  def listFiles(fl: FileList, id: String) = {
     html(
       head(),
       body(
         h1("Listing Files" +
           ""),
         ul(
-          for(f <- fl.files.get) yield {
-            val id = f.id.get
-            if(f.isFolder){
-              li(a(href:="/google/drive/list?parent="+id, f.name.get+" (folder)"))
+          for (f <- fl.getFiles.asScala) yield {
+            val id = f.getId
+            if (DriveService.isFolder(f)) {
+              li(a(href := "/google/drive/list?parent=" + id, f.getName + " (folder)"))
             } else {
-              li(a(href:="/google/drive/files/"+id, f.name.get))
+              li(a(href := "/google/drive/files/" + id, f.getName))
             }
           }
         ),
-        if(fl.nextPageToken.isDefined)
-          a(href:="/google/drive/list?next="+fl.nextPageToken.get+"&parent="+id, "Next 10 hits")
+        if (fl.getNextPageToken != null) {
+          val n = Uri("/google/drive/list").withQuery(Query(Map(
+            "next" -> fl.getNextPageToken,
+            "parent" -> id
+          ))).toString
+          a(href := n, "Next 10 hits")
+        }
         else
-          a(href:="/google/drive/list", "Start over")
+          a(href := "/google/drive/list", "Start over")
 
       )
     )
+  }
 }

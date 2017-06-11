@@ -17,7 +17,7 @@ trait GService[A] {
 
   implicit def ec: ExecutionContext
 
-  def execA[T <: GApiType](e: => T): Future[T] = {
+  def execA[T](e: => T): Future[T] = {
     Future(e) recover {
       case e: Throwable => throw Converters.toGApiException(e)
     }

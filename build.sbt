@@ -20,6 +20,7 @@ lazy val common = (project in file("common")).
     libraryDependencies += typesafeConf,
     libraryDependencies ++= googleAPIs,
     libraryDependencies ++= slickDeps,
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.1",
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {

@@ -6,10 +6,9 @@ import java.nio.file.Path
 
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.http.{ByteArrayContent, FileContent, InputStreamContent}
-import com.google.api.client.util.ByteArrayStreamingContent
 import com.google.api.services.drive.Drive
+import com.google.api.services.drive.model.{About, File, FileList}
 import org.mellowtech.gapi.config.GApiConfig
-import org.mellowtech.gapi.drive.model.{About, File, FileList}
 import org.mellowtech.gapi.service.GService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,9 +27,10 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class DriveService(val credential: Credential)(implicit val ec: ExecutionContext, c: GApiConfig) extends GService[Drive]{
 
-  import org.mellowtech.gapi.drive.model.DriveConverters._
   import Operators._
   import org.mellowtech.gapi.GApiImplicits._
+  import AboutField._
+  import FileListField.FileListField
 
   val drive: Drive = new Drive.Builder(httpTransport, jsonFactory,
     credential).setApplicationName(c.applicationName).build()
@@ -42,29 +42,39 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
   val createPresentation: (String,Seq[String]) => Future[File] = create(DriveService.GPRESENTATION)
 
   def aboutAll: Future[About] = {
-    about(AboutFields.aboutFields: _*)
+    about(AboutField.values.toSeq: _*)
   }
 
-  def about(fields: String*): Future[About] = {
+  def about(fields: AboutField*): Future[About] = {
     execA[About] {
       val exec = drive.about.get.setFields(fields.mkString(","))
-      exec.execute().asScala
+      exec.execute()
     }
+  }
+
+  def file(id: String, all: Boolean = true): Future[File] = execA[File]{
+    val fields: String = all match {
+      case true => {
+        FileField.allFields
+      }
+      case false => ""
+    }
+    drive.files().get(id).setFields(fields).execute()
   }
 
   def root: Future[File] = execA[File]{
     val f = drive.files().get("root").execute()
-    f.asScala
+    f
   }
 
   def create(mimeType: String)(name: String, parentIds: Seq[String]): Future[File] = execA{
-    val f = toGoogleFile(name, parentIds, mimeType)
+    val f = DriveService.toGoogleFile(name, parentIds, mimeType)
     val cf = drive.files.create(f).execute()
-    cf.asScala
+    cf
   }
 
 
-  def list(parent: File): Future[FileList] = list(parent.id.get)
+  def list(parent: File): Future[FileList] = list(parent.getId)
 
   def list(parentId: String): Future[FileList] = list(Clause(parents in parentId))
 
@@ -81,10 +91,12 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     * @return
     */
   def list(q: Option[Clause], pageSize: Option[Int], orderBy: Option[Seq[String]], pageToken: Option[String],
-          fileFields: Option[Seq[String]]) = listOf(l => {
+          fileFields: Option[Seq[FileListField]]) = listOf(l => {
     var fields = ""
     if(q.isDefined) l.setQ(q.get.render)
     if(pageSize.isDefined) {
+      //println("nextPageToken = " + FileListField.nextPageToken.toString)
+      //fields = FileListField.nextPageToken.toString //"nextPageToken"
       fields = "nextPageToken"
       l.setPageSize(pageSize.get)
     }
@@ -110,7 +122,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
   def listOf(f: Drive#Files#List => Unit): Future[FileList] = {
     val fl = drive.files().list()
     f(fl)
-    execA(fl.execute().asScala)
+    execA(fl.execute())
   }
 
   def export(to: OutputStream, mimeType: String, id: String): Future[Unit] = execU{
@@ -146,7 +158,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     if(convertTo.isDefined)
       file.setMimeType(convertTo.get)
     val create = drive.files().create(file,mc).setFields("id")
-    execA(create.execute().asScala)
+    execA(create.execute())
   }
 
 }
@@ -158,8 +170,20 @@ object DriveService{
   val GDOCUMENT = "application/vnd.google-apps.document"
   val GPRESENTATION = "application/vnd.google-apps.presentation"
 
+  def isFolder(f: File): Boolean = Option(f.getMimeType) match {
+    case Some(m) => m.equals(GFOLDER)
+    case None => false
+  }
 
+  import scala.collection.JavaConverters._
 
+  def toGoogleFile(name: String, parentIds: Seq[String], mimeType: String): File = {
+    val f = new File()
+    f.setName(name)
+    f.setParents(parentIds.asJava)
+    f.setMimeType(mimeType)
+    f
+  }
 
   def apply(credential: Credential)(implicit ec: ExecutionContext, c: GApiConfig): DriveService = new DriveService(credential)
 

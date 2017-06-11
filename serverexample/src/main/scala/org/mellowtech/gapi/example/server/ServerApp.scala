@@ -104,7 +104,7 @@ object ServerApp{
       path("about") {
         val gdrive = serverCallback.gdrive.get
         val fa = gdrive.aboutAll
-        onSuccess(fa) {a => complete(a.user.get.displayName)}
+        onSuccess(fa) {a => complete(a.getUser.getDisplayName)}
       } ~
       path("upload") {
         get{
@@ -114,7 +114,7 @@ object ServerApp{
           formFields('filename,'filecontent){(fn,fc) =>
             val gdrive = serverCallback.gdrive.get
             val ff = gdrive.upload(fc, fn, "text/plain")
-            onSuccess(ff)(f => redirect("/google/drive/files/"+f.id.get, StatusCodes.SeeOther))
+            onSuccess(ff)(f => redirect("/google/drive/files/"+f.getId, StatusCodes.SeeOther))
             //onSuccess(ff)(f => complete("created file: "+f.id))
 
           }
@@ -123,25 +123,32 @@ object ServerApp{
       path("list") {
         parameter('next.?, 'parent.?) {(next,parent) =>
           val gdrive = serverCallback.gdrive.get
+          println("list next 10 hits: "+next+parent)
           val fa = parent match {
             case Some(n) => for{
               l <- gdrive.list(Some(Clause(parents in parent.get)), Some(10), None, next, None)
             } yield(Pages.listFiles(l, parent.get))
             case None => for {
               r <- gdrive.root
-              l <- gdrive.list(Some(Clause(parents in r.id.get)), Some(10), None, None, None)
-            } yield (Pages.listFiles(l,r.id.get))
+              l <- gdrive.list(Some(Clause(parents in r.getId)), Some(10), None, None, None)
+            } yield (Pages.listFiles(l,r.getId))
           }
           onSuccess(fa)(a => toUtf(a.render))
         }
       } ~
-      path("file") {
+      path("files" / Segment){id => {
+        val gdrive = serverCallback.gdrive.get
+        val ff = gdrive.file(id)
+        onSuccess(ff)(f => toUtf(Pages.file(f).render))
+      }
+      }
+      /*path("file") {
         parameter("name")(name => {
           val gdrive = serverCallback.gdrive.get
           val fa = gdrive.createDocument(name, Nil)
           onSuccess(fa) (a => complete("file created "+a.name))
         })
-      }
+      }*/
     }
   }
 

@@ -2,6 +2,9 @@ package org.mellowtech.gapi.model
 
 import org.mellowtech.gapi.service.GApiException
 
+import scala.collection.immutable.ListMap
+
+
 trait GApiType
 
 case class TokenResponse(access_token: String,
@@ -19,6 +22,33 @@ case class ErrorInfo(domain: Option[String] = None,
 case class JsonError(code: Option[Int] = None,
                      errors: Option[Seq[ErrorInfo]] = None,
                      message: Option[String] = None) extends GApiType
+
+object CaseClassConverter {
+
+
+  import scala.reflect.runtime.universe._
+
+  /**
+    * Returns a map from formal parameter names to types, containing one
+    * mapping for each constructor argument.  The resulting map (a ListMap)
+    * preserves the order of the primary constructor's parameter list.
+    */
+  def caseClassParamsOf[T: TypeTag]: ListMap[String, Type] = {
+    val tpe = typeOf[T]
+    val constructorSymbol = tpe.decl(nme.CONSTRUCTOR)
+    val defaultConstructor =
+      if (constructorSymbol.isMethod) constructorSymbol.asMethod
+      else {
+        val ctors = constructorSymbol.asTerm.alternatives
+        ctors.map { _.asMethod }.find { _.isPrimaryConstructor }.get
+      }
+
+    ListMap[String, Type]() ++ defaultConstructor.paramLists.reduceLeft(_ ++ _).map {
+      sym => sym.name.toString -> tpe.member(sym.name).asMethod.returnType
+    }
+  }
+
+}
 
 object Converters{
 
