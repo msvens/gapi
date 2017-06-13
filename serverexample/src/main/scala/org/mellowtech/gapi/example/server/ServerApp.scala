@@ -55,7 +55,7 @@ object ServerApp{
   def main(args: Array[String]): Unit = {
 
     initGoogleServices
-    Http().bindAndHandle(route ~ gAuth.route, conf.httpHost.get, conf.httpPort.get)
+    Http().bindAndHandle(authRoute ~ gAuth.route ~ defRoute, conf.httpHost.get, conf.httpPort.get)
   }
 
   def initGoogleServices: Unit = {
@@ -76,13 +76,21 @@ object ServerApp{
     }
   }
 
-  def route(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
+  def defRoute(implicit m: Materializer): Route = {
+    pathEndOrSingleSlash {
+      toUtf(Pages.rootPage.render)
+    } ~ {
+      println("redirecting to root")
+      redirect("/", StatusCodes.SeeOther)
+    }
+  }
+
+  def authRoute(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
 
     validate(serverCallback.hasDrive.get(), "no drive needs auth") {
-
       pathEndOrSingleSlash {
         get {
-          complete("root worked")
+          toUtf(Pages.rootPage.render)
         }
       } ~
         pathPrefix("google") {
@@ -95,7 +103,6 @@ object ServerApp{
   }
 
   def driveRoute(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
-    //import Directives._
     import org.mellowtech.gapi.drive.Operators._
     pathPrefix("drive") {
       pathEndOrSingleSlash {

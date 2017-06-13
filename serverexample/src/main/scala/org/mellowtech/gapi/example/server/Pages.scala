@@ -12,6 +12,19 @@ import scala.collection.JavaConverters._
 
 object Pages {
 
+  def toUri(uri: String, query: (String,String)*): String = Uri("/google/drive/list").withQuery(Query(query.toMap)).toString
+
+
+  val rootPage =
+    html(
+      head(),
+      h1("Welcome to the goole services test app"),
+      ul(
+        li(a(href:="/google", "Test Google Services")),
+        li(a(href:="/auth", "Authenticate with Google"))
+      )
+    )
+
   def g(p: String): String = s"google $p"
   val googleListing =
     html(
@@ -85,11 +98,7 @@ object Pages {
           }
         ),
         if (fl.getNextPageToken != null) {
-          val n = Uri("/google/drive/list").withQuery(Query(Map(
-            "next" -> fl.getNextPageToken,
-            "parent" -> id
-          ))).toString
-          a(href := n, "Next 10 hits")
+          a(href := toUri("/google/drive/list", ("next", fl.getNextPageToken), ("parent", id)), "Next 10 hits")
         }
         else
           a(href := "/google/drive/list", "Start over")
