@@ -38,7 +38,7 @@ object ServerApp{
   implicit val conf: GApiConfig = GApiConfig()
 
   val dbService = new DbService
-  val tokenDAO = new TokenDAO(dbService)
+  val tokenDAO = TokenDAO(dbService)
   val serverCallback = new ServerCallback(tokenDAO)
   val gAuth = new GoogleRouter(serverCallback)
   val gApiExceptionHandler = ExceptionHandler {
@@ -57,6 +57,8 @@ object ServerApp{
     initGoogleServices
     Http().bindAndHandle(authRoute ~ gAuth.route ~ defRoute, conf.httpHost.get, conf.httpPort.get)
   }
+
+  def drive = serverCallback.gdrive.get
 
   def initGoogleServices: Unit = {
     //First try to create a drive-service if we already have credentials
@@ -79,10 +81,10 @@ object ServerApp{
   def defRoute(implicit m: Materializer): Route = {
     pathEndOrSingleSlash {
       toUtf(Pages.rootPage.render)
-    } ~ {
-      println("redirecting to root")
+    } ~ extractUri(uri => {
+      println("redirecting from: "+uri+" to root")
       redirect("/", StatusCodes.SeeOther)
-    }
+    })
   }
 
   def authRoute(implicit m: Materializer): Route = handleExceptions(gApiExceptionHandler) {
@@ -147,15 +149,12 @@ object ServerApp{
         val gdrive = serverCallback.gdrive.get
         val ff = gdrive.file(id)
         onSuccess(ff)(f => toUtf(Pages.file(f).render))
-      }
-      }
-      /*path("file") {
-        parameter("name")(name => {
-          val gdrive = serverCallback.gdrive.get
-          val fa = gdrive.createDocument(name, Nil)
-          onSuccess(fa) (a => complete("file created "+a.name))
-        })
-      }*/
+      }} ~
+      path("files" / Segment / "raw"){ id => {
+        val gdrive = drive
+        val fs = gdrive.download(id)
+        onSuccess(fs)(complete(_))
+      }}
     }
   }
 

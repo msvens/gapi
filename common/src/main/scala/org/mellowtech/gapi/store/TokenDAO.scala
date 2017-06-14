@@ -13,7 +13,37 @@ case class Token(id: String, access_token: String, token_type: String,
                  expires_in: LocalDateTime, refresh_token: Option[String])
 
 
-class TokenDAO(protected val dbService: DbService) {
+trait TokenService {
+
+  val defaultId = "c80624f5-3cd5-42a6-b2d9-7d76f47f17f1"
+
+  //def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Boolean]
+  /**
+    * Puts a new or updates an existing token's access_token and expires timeout.
+    * @param t token to update
+    * @return a future to the number of records that where updated (1)
+    */
+  def put(t: Token): Future[Int]
+
+  def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Int]
+
+  /**
+    * Deletes an existing token
+    * @param id token to delete
+    * @return a future to the numver of deleted redcords (0 or 1)
+    */
+  def delete(id: String): Future[Int]
+
+  def get(id: String): Future[Option[Token]]
+
+  def getDefault: Future[Option[Token]] = get(defaultId)
+
+
+
+}
+
+
+class TokenDAO(protected val dbService: DbService, implicit val ec: ExecutionContext) extends TokenService{
 
   import dbService.profile.api._
 
@@ -40,37 +70,61 @@ class TokenDAO(protected val dbService: DbService) {
   private val tokens = TableQuery[TokenTable]
 
 
-  def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Int] = {
+  //COMPILED QUERIES:
+  def updateToken(id: Rep[String]) = for {
+    t <- tokens if t.id === id
+  } yield (t.access_token, t.expires_in)
+
+  val updateTokenQ = Compiled(updateToken _)
+
+
+  def tokenById(id: Rep[String]) = for {
+    t <- tokens if t.id === id
+  } yield t
+
+  val tokenByIdQ = Compiled(tokenById _)
+
+
+  /*private def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Int] = {
     val q = for { t <- tokens if t.id === id } yield (t.access_token, t.expires_in)
     val updateAction = q.update((accessToken,expiresIn))
     dbService.db.run(updateAction)
+  }*/
+
+  override def update(id: String, accessToken: String, expriesIn: LocalDateTime): Future[Int] = {
+    val action = updateTokenQ(id).update(accessToken, expriesIn)
+    dbService.db.run(action)
   }
 
-  def put(t: Token)(implicit ec: ExecutionContext): Future[Int] = t.refresh_token match {
+  override def put(t: Token): Future[Int] = for {
+    ot <- get(t.id)
+    i <- ot match {
+      case None => dbService.db.run(tokens += t)
+      case _  if t.refresh_token.isDefined => dbService.db.run(tokens.insertOrUpdate(t))
+      case _ => update(t.id, t.access_token, t.expires_in)
+    }
+  } yield i
+
+  /*
+  override def put(t: Token): Future[Int] = t.refresh_token match {
     case None => {
       for {
         ret <- get(t.id)
         i <- ret match {
-          case None => forcePut(t)
-          case Some(tt) => update(t.id, t.access_token, t.expires_in)
+          case None => dbService.db.run(tokens += t)
+          case Some(_) => update(t.id, t.access_token, t.expires_in)
         }
       } yield i
     }
-    case Some(_) => forcePut(t)
+    case Some(_) => dbService.db.run(tokens.insertOrUpdate(t))
   }
-  /**
-    * Inserts a new token or updates an existing token
-    */
-  def forcePut(t: Token): Future[Int] = {
-    dbService.db.run(tokens.insertOrUpdate(t))
-  }
+  */
 
-  def getDefault: Future[Option[Token]] = get(TokenDAO.defaultUUID)
+  override def get(id: String): Future[Option[Token]] = dbService.db.run(tokenByIdQ(id).result.headOption)
 
-  def get(id: String): Future[Option[Token]] = {
-    val q = tokens.filter(_.id === id)
-    dbService.db.run(q.result.headOption)
-  }
+
+  override def delete(id: String): Future[Int] = dbService.db.run(tokenByIdQ(id).delete)
+
 
 }
 
@@ -88,7 +142,7 @@ object TokenDAO {
 
   val defaultUUID = "c80624f5-3cd5-42a6-b2d9-7d76f47f17f1"
 
-  def apply(dbService: DbService): TokenDAO = new TokenDAO(dbService)
+  def apply(dbService: DbService)(implicit ec: ExecutionContext): TokenDAO = new TokenDAO(dbService, ec)
 
   def toToken(tr: TokenResponse): Token = toToken(defaultUUID, tr)
 

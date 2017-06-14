@@ -1,7 +1,8 @@
 package org.mellowtech.gapi.drive
 
 
-import java.io.{InputStream, OutputStream}
+import java.io.{ByteArrayOutputStream, InputStream, OutputStream}
+import java.nio.charset.Charset
 import java.nio.file.Path
 
 import com.google.api.client.auth.oauth2.Credential
@@ -127,6 +128,13 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
 
   def export(to: OutputStream, mimeType: String, id: String): Future[Unit] = execU{
     drive.files().export(id, mimeType).executeMediaAndDownloadTo(to)
+  }
+
+  def download(id: String, codec: String = "UTF-8"): Future[String] = execA{
+      val barr = new ByteArrayOutputStream
+      val d = drive.files().get(id)
+      d.executeMediaAndDownloadTo(barr)
+      new String(barr.toByteArray, Charset.forName(codec))
   }
 
   def download(to: OutputStream, id: String, range: Some[(Int,Int)]): Future[Unit] = execU{

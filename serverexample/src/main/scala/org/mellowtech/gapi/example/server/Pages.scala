@@ -73,7 +73,7 @@ object Pages {
           li("mime type: "+f.getMimeType),
           li(""+f.getCreatedTime),
           li("is folder: "+DriveService.isFolder(f)),
-          li(a(href:="/google/drive/files/"+f.getId+"/raw","raw view")),
+          if(f.getMimeType.startsWith("text/")) li(a(href:="/google/drive/files/"+f.getId+"/raw","raw view")) else (),
           if(f.getWebContentLink != null) li(a(href:=f.getWebContentLink, "web content link")) else (),
           if(f.getWebViewLink != null) li(a(href:=f.getWebViewLink, "web view link")) else ()
         )
