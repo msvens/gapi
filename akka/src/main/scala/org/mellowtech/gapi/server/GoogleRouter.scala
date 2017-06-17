@@ -12,7 +12,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.model.TokenResponse
-import org.mellowtech.gapi.store.TokenDAO
+import org.mellowtech.gapi.store.{TokenDAO, TokenService}
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
@@ -32,13 +32,13 @@ trait DefaultAuthenticated extends GoogleAuthenticated {
 
   import scala.concurrent.duration._
 
-  def tokenDAO: TokenDAO
+  def tokenService: TokenService
 
   implicit def ec: ExecutionContext
 
   override def onAuthenticated(tr: TokenResponse): Unit = {
     val t = TokenDAO.toToken(tr)
-    val r = Await.result(tokenDAO.put(t), 1 second)
+    val r = Await.result(tokenService.put(t), 1 second)
     r match {
       case x if x > 0 => authenticated.set(true)
       case _ => authenticated.set(false)

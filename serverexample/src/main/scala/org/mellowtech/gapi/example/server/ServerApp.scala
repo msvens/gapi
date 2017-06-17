@@ -1,24 +1,26 @@
 package org.mellowtech.gapi.example.server
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, ExceptionHandler, Route}
+import akka.stream.scaladsl.StreamConverters
 import akka.stream.{ActorMaterializer, Materializer}
 import com.google.api.client.auth.oauth2.Credential
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.{Clause, DriveService}
 import org.mellowtech.gapi.server.{DefaultAuthenticated, GoogleHelper, GoogleRouter}
 import org.mellowtech.gapi.service.GApiException
-import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO}
+import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO, TokenService}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class ServerCallback(val tokenDAO: TokenDAO)(implicit val ec: ExecutionContext) extends DefaultAuthenticated with CredentialListener {
+class ServerCallback(val tokenService: TokenService)(implicit val ec: ExecutionContext) extends DefaultAuthenticated with CredentialListener {
 
   val hasDrive: AtomicBoolean = new AtomicBoolean(false)
   var gdrive: Option[DriveService] = None
@@ -37,8 +39,9 @@ object ServerApp{
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val conf: GApiConfig = GApiConfig()
 
+
   val dbService = new DbService
-  val tokenDAO = TokenDAO(dbService)
+  val tokenDAO: TokenService = TokenDAO(dbService)
   val serverCallback = new ServerCallback(tokenDAO)
   val gAuth = new GoogleRouter(serverCallback)
   val gApiExceptionHandler = ExceptionHandler {
@@ -113,7 +116,7 @@ object ServerApp{
       path("about") {
         val gdrive = serverCallback.gdrive.get
         val fa = gdrive.aboutAll
-        onSuccess(fa) {a => complete(a.getUser.getDisplayName)}
+        onSuccess(fa){a => println(a.toPrettyString); toUtf(Pages.about(a).render)}// {a => complete(a.getUser.getDisplayName)}
       } ~
       path("upload") {
         get{
@@ -154,6 +157,36 @@ object ServerApp{
         val gdrive = drive
         val fs = gdrive.download(id)
         onSuccess(fs)(complete(_))
+      }} ~
+      path("files" / Segment / "export"){ id => {
+       parameter('type){tp =>
+         val bout = new ByteArrayOutputStream()
+         getFromFile("helloworld.txt")
+         val fe = drive.export(bout,tp,id)
+         getFromFile("helloworld.txt")
+         onSuccess(fe){
+           val arr = bout.toByteArray
+           val ct: ContentType = ContentType(MediaTypes.`application/pdf`)
+           complete{
+             HttpEntity.Default(ct, arr.length,
+               StreamConverters.fromInputStream(() => new ByteArrayInputStream(arr)))
+           }
+
+           //complete(id+" "+tp)
+         }
+         /*
+         complete {
+                    HttpEntity.Default(contentType, length,
+                      StreamConverters.fromInputStream(() ⇒ url.openStream())
+                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher))) // TODO is this needed? It already uses `val inputStreamSource = name("inputStreamSource") and IODispatcher`
+                  }
+          */
+         /*import akka.http.scaladsl.server.directives._
+         import ContentTypeResolver.Default
+         getFromFile("helloworld.txt")
+         //complete(id+" " + t)
+         */
+       }
       }}
     }
   }

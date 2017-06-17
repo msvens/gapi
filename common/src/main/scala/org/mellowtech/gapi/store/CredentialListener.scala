@@ -17,12 +17,12 @@ trait CredentialListener extends CredentialRefreshListener{
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def tokenDAO: TokenDAO
+  def tokenService: TokenService
 
 
   override def onTokenResponse(credential: Credential, tokenResponse: JTokenResponse): Unit = {
     val ld = LocalDateTime.now().plusSeconds(credential.getExpiresInSeconds)
-    val f = tokenDAO.update(TokenDAO.defaultUUID, credential.getAccessToken, ld)
+    val f = tokenService.update(TokenDAO.defaultUUID, credential.getAccessToken, ld)
     val updated = Await.result(f, 1 seconds)
     logger.debug("updated token: "+1)
   }

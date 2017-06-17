@@ -70,7 +70,8 @@ lazy val serverexample = (project in file("serverexample")).
         Some("snapshots" at nexus + "content/repositories/snapshots")
       else
         Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    }
+    },
+    javaOptions in reStart += "-Dconfig.file=/Users/msvens/conf/serverexample.conf"
   ).dependsOn(common,akka, drive)
 
 //Single Project Config

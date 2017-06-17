@@ -17,13 +17,14 @@ trait TokenService {
 
   val defaultId = "c80624f5-3cd5-42a6-b2d9-7d76f47f17f1"
 
-  //def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Boolean]
   /**
-    * Puts a new or updates an existing token's access_token and expires timeout.
+    * Puts a new or updates an existing token's access_token and expires_in. If the new token
+    * also contains a refresh token that should be updated as well
     * @param t token to update
     * @return a future to the number of records that where updated (1)
     */
   def put(t: Token): Future[Int]
+
 
   def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Int]
 
@@ -38,8 +39,53 @@ trait TokenService {
 
   def getDefault: Future[Option[Token]] = get(defaultId)
 
+}
 
+class MemTokenService extends TokenService {
 
+  var m: Map[String,Token] = Map()
+
+  /**
+    * Puts a new or updates an existing token's access_token and expires_in. If the new token
+    * also contains a refresh token that should be updated as well
+    *
+    * @param t token to update
+    * @return a future to the number of records that where updated (1)
+    */
+  override def put(t: Token): Future[Int] = {
+    val old: Token = m.getOrElse(t.id,t).copy(expires_in = t.expires_in, access_token = t.access_token)
+    old.refresh_token match {
+      case Some(_) => m += (old.id -> old)
+      case None => m += (old.id -> old.copy(refresh_token = t.refresh_token))
+    }
+    Future.successful(1)
+  }
+
+  override def update(id: String, accessToken: String, expiresIn: LocalDateTime): Future[Int] = {
+    val updated = m.get(id) match {
+      case Some(n) => {
+        m += (id -> n.copy(access_token = accessToken, expires_in = expiresIn))
+        1
+      }
+      case None => 0
+    }
+    Future.successful(updated)
+  }
+
+  /**
+    * Deletes an existing token
+    *
+    * @param id token to delete
+    * @return a future to the numver of deleted redcords (0 or 1)
+    */
+  override def delete(id: String): Future[Int] = {
+    val deleted = m.contains(id) match {
+      case true => m -= id; 1
+      case false => 0
+    }
+    Future.successful(deleted)
+  }
+  override def get(id: String): Future[Option[Token]] = Future.successful(m.get(id))
 }
 
 
@@ -100,7 +146,7 @@ class TokenDAO(protected val dbService: DbService, implicit val ec: ExecutionCon
     ot <- get(t.id)
     i <- ot match {
       case None => dbService.db.run(tokens += t)
-      case _  if t.refresh_token.isDefined => dbService.db.run(tokens.insertOrUpdate(t))
+      case _ if t.refresh_token.isDefined => dbService.db.run(tokens.insertOrUpdate(t))
       case _ => update(t.id, t.access_token, t.expires_in)
     }
   } yield i
@@ -124,7 +170,6 @@ class TokenDAO(protected val dbService: DbService, implicit val ec: ExecutionCon
 
 
   override def delete(id: String): Future[Int] = dbService.db.run(tokenByIdQ(id).delete)
-
 
 }
 

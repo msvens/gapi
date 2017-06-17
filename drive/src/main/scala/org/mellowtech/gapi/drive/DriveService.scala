@@ -22,25 +22,24 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * @see <a href="https://developers.google.com/apis-explorer/#p/drive/v3/">Drive API Explorer</a>
   * @see <a href="https://developers.google.com/resources/api-libraries/documentation/drive/v3/java/latest/">Drive Javadoc</a>
-  *
   * @param credential
   * @param ec
   */
-class DriveService(val credential: Credential)(implicit val ec: ExecutionContext, c: GApiConfig) extends GService[Drive]{
+class DriveService(val credential: Credential)(implicit val ec: ExecutionContext, c: GApiConfig) extends GService[Drive] {
 
-  import Operators._
-  import org.mellowtech.gapi.GApiImplicits._
   import AboutField._
   import FileListField.FileListField
+  import Operators._
+  import org.mellowtech.gapi.GApiImplicits._
 
   val drive: Drive = new Drive.Builder(httpTransport, jsonFactory,
     credential).setApplicationName(c.applicationName).build()
 
   val service = drive
-  val createFolder: (String,Seq[String]) => Future[File] = create(DriveService.GFOLDER)
-  val createDocument: (String,Seq[String]) => Future[File] = create(DriveService.GDOCUMENT)
-  val createSheet: (String,Seq[String]) => Future[File] = create(DriveService.GSHEET)
-  val createPresentation: (String,Seq[String]) => Future[File] = create(DriveService.GPRESENTATION)
+  val createFolder: (String, Seq[String]) => Future[File] = create(DriveService.GFOLDER)
+  val createDocument: (String, Seq[String]) => Future[File] = create(DriveService.GDOCUMENT)
+  val createSheet: (String, Seq[String]) => Future[File] = create(DriveService.GSHEET)
+  val createPresentation: (String, Seq[String]) => Future[File] = create(DriveService.GPRESENTATION)
 
   def aboutAll: Future[About] = {
     about(AboutField.values.toSeq: _*)
@@ -53,7 +52,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     }
   }
 
-  def file(id: String, all: Boolean = true): Future[File] = execA[File]{
+  def file(id: String, all: Boolean = true): Future[File] = execA[File] {
     val fields: String = all match {
       case true => {
         FileField.allFields
@@ -63,12 +62,12 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     drive.files().get(id).setFields(fields).execute()
   }
 
-  def root: Future[File] = execA[File]{
+  def root: Future[File] = execA[File] {
     val f = drive.files().get("root").execute()
     f
   }
 
-  def create(mimeType: String)(name: String, parentIds: Seq[String]): Future[File] = execA{
+  def create(mimeType: String)(name: String, parentIds: Seq[String]): Future[File] = execA {
     val f = DriveService.toGoogleFile(name, parentIds, mimeType)
     val cf = drive.files.create(f).execute()
     cf
@@ -84,6 +83,7 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
   /** list files
     *
     * Control your file listing using some common options
+    *
     * @param q
     * @param pageSize
     * @param orderBy
@@ -92,22 +92,22 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     * @return
     */
   def list(q: Option[Clause], pageSize: Option[Int], orderBy: Option[Seq[String]], pageToken: Option[String],
-          fileFields: Option[Seq[FileListField]]) = listOf(l => {
+           fileFields: Option[Seq[FileListField]]) = listOf(l => {
     var fields = ""
-    if(q.isDefined) l.setQ(q.get.render)
-    if(pageSize.isDefined) {
+    if (q.isDefined) l.setQ(q.get.render)
+    if (pageSize.isDefined) {
       //println("nextPageToken = " + FileListField.nextPageToken.toString)
       //fields = FileListField.nextPageToken.toString //"nextPageToken"
       fields = "nextPageToken"
       l.setPageSize(pageSize.get)
     }
-    if(orderBy.isDefined) l.setOrderBy(orderBy.get.mkString(","))
-    if(pageToken.isDefined) l.setPageToken(pageToken.get)
-    if(fileFields.isDefined){
-      if(pageSize.isDefined)
-        fields += ",files("+fileFields.get.mkString(",")+")"
+    if (orderBy.isDefined) l.setOrderBy(orderBy.get.mkString(","))
+    if (pageToken.isDefined) l.setPageToken(pageToken.get)
+    if (fileFields.isDefined) {
+      if (pageSize.isDefined)
+        fields += ",files(" + fileFields.get.mkString(",") + ")"
       else
-        fields += "files("+fileFields.get.mkString(",")+")"
+        fields += "files(" + fileFields.get.mkString(",") + ")"
     }
   })
 
@@ -126,34 +126,34 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     execA(fl.execute())
   }
 
-  def export(to: OutputStream, mimeType: String, id: String): Future[Unit] = execU{
+  def export(to: OutputStream, mimeType: String, id: String): Future[Unit] = execU {
     drive.files().export(id, mimeType).executeMediaAndDownloadTo(to)
   }
 
-  def download(id: String, codec: String = "UTF-8"): Future[String] = execA{
-      val barr = new ByteArrayOutputStream
-      val d = drive.files().get(id)
-      d.executeMediaAndDownloadTo(barr)
-      new String(barr.toByteArray, Charset.forName(codec))
+  def download(id: String, codec: String = "UTF-8"): Future[String] = execA {
+    val barr = new ByteArrayOutputStream
+    val d = drive.files().get(id)
+    d.executeMediaAndDownloadTo(barr)
+    new String(barr.toByteArray, Charset.forName(codec))
   }
 
-  def download(to: OutputStream, id: String, range: Some[(Int,Int)]): Future[Unit] = execU{
+  def download(to: OutputStream, id: String, range: Some[(Int, Int)]): Future[Unit] = execU {
     val d = drive.files().get(id)
-    if(range.isDefined)
-      d.getRequestHeaders.setRange("bytes="+range.get._1+"-"+range.get._2)
+    if (range.isDefined)
+      d.getRequestHeaders.setRange("bytes=" + range.get._1 + "-" + range.get._2)
     d.executeMediaAndDownloadTo(to)
   }
 
   def upload[T](content: T, name: String, mimeType: String, parentId: Option[String] = None,
-             convertTo: Option[String] = None): Future[File] = {
+                convertTo: Option[String] = None): Future[File] = {
 
     import com.google.api.services.drive.model.{File => GFile}
 
     val mc = content match {
       case x: Path => new FileContent(mimeType, x.toFile)
       case x: java.io.File => new FileContent(mimeType, x)
-      case x: Array[Byte] => new ByteArrayContent(mimeType,x)
-      case x: InputStream => new InputStreamContent(mimeType,x)
+      case x: Array[Byte] => new ByteArrayContent(mimeType, x)
+      case x: InputStream => new InputStreamContent(mimeType, x)
       case x => {
         val b = x.toString.getBytes("UTF-8")
         new ByteArrayContent(mimeType, b)
@@ -161,17 +161,17 @@ class DriveService(val credential: Credential)(implicit val ec: ExecutionContext
     }
     val file = new GFile
     file.setName(name)
-    if(parentId.isDefined)
+    if (parentId.isDefined)
       file.setParents(java.util.Collections.singletonList(parentId.get))
-    if(convertTo.isDefined)
+    if (convertTo.isDefined)
       file.setMimeType(convertTo.get)
-    val create = drive.files().create(file,mc).setFields("id")
+    val create = drive.files().create(file, mc).setFields("id")
     execA(create.execute())
   }
 
 }
 
-object DriveService{
+object DriveService {
 
   val GFOLDER = "application/vnd.google-apps.folder"
   val GSHEET = "application/vnd.google-apps.spreadsheet"

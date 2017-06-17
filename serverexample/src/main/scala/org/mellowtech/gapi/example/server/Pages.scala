@@ -4,15 +4,16 @@ package org.mellowtech.gapi.example.server
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
-import com.google.api.services.drive.model.{File, FileList}
+import com.google.api.services.drive.model.{About, File, FileList}
 import org.mellowtech.gapi.drive.DriveService
 
 import scalatags.Text.all._
 import scala.collection.JavaConverters._
 
+
 object Pages {
 
-  def toUri(uri: String, query: (String,String)*): String = Uri("/google/drive/list").withQuery(Query(query.toMap)).toString
+  def toUri(uri: String, query: (String,String)*): String = Uri(uri).withQuery(Query(query.toMap)).toString
 
 
   val rootPage =
@@ -64,6 +65,35 @@ object Pages {
       )
     )
 
+  def skeleton(f: => Frag) = {
+    html(
+      head(),
+      body(
+        f
+      )
+    )
+  }
+
+  def about(a: About) = skeleton{
+    frag(
+      h2("About this Google Drive"),
+      pre(
+        code(
+          a.toPrettyString
+        )
+      )
+    )
+  }
+
+  def export(f: File): Frag = f.getMimeType match {
+    case DriveService.GDOCUMENT => {
+      val uri = toUri("/google/drive/files/"+f.getId+"/"+"export", ("type", "application/pdf")).toString
+      println(uri)
+      a(href:=uri, "export to pdf")
+    }
+    case _ => ()
+  }
+
   def file(f: File) = {
     html(
       head(),
@@ -76,7 +106,8 @@ object Pages {
           if(f.getMimeType.startsWith("text/")) li(a(href:="/google/drive/files/"+f.getId+"/raw","raw view")) else (),
           if(f.getWebContentLink != null) li(a(href:=f.getWebContentLink, "web content link")) else (),
           if(f.getWebViewLink != null) li(a(href:=f.getWebViewLink, "web view link")) else ()
-        )
+        ),
+        export(f)
       )
     )
   }
