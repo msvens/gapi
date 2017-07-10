@@ -1,7 +1,9 @@
 package org.mellowtech.gapi.cli
 
 
-import com.google.api.client.auth.oauth2.Credential
+import java.util
+
+import com.google.api.client.auth.oauth2.{Credential, CredentialRefreshListener}
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
@@ -10,17 +12,69 @@ import com.google.api.client.http.HttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.drive.Drive
+import org.mellowtech.gapi.GApiImplicits
+import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.DriveService
 import org.mellowtech.gapi.service.GApiException
+import org.mellowtech.gapi.store.{CredentialListener, TokenService}
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
+
 
 /**
   * @author msvens
   * @since 2017-05-06
   */
-object LocalAuth extends App{
+object LocalAuth{
+
+
+  def main(args: Array[String]): Unit = {
+
+    implicit val conf: GApiConfig = GApiConfig()
+    import org.mellowtech.gapi.GApiImplicits._
+    implicit val ec = ExecutionContext.global
+
+    import scala.collection.JavaConverters._
+
+    val secrets = new GoogleClientSecrets
+
+    val DATA_STORE_DIR = new java.io.File(System.getProperty("user.home"), ".store/brfapp")
+
+    val redirectUris = new util.ArrayList[String]()
+    redirectUris.add("urn:ietf:wg:oauth:2.0:oob")
+    redirectUris.add("http://localhost")
+
+    val dataStoreFactory: FileDataStoreFactory =
+    new FileDataStoreFactory(DATA_STORE_DIR)
+
+
+    val installed = new GoogleClientSecrets.Details
+
+    installed.setClientId(conf.clientIdInstalled.get)
+    installed.setClientSecret(conf.clientSecretInstalled.get)
+    installed.setAuthUri(conf.authUri.get)
+    installed.setTokenUri(conf.tokenUri.get)
+    installed.setRedirectUris(redirectUris)
+
+    secrets.setInstalled(installed)
+
+
+    val flow = new GoogleAuthorizationCodeFlow.Builder(
+      httpTransport, jsonFactory, secrets, conf.scopes.asJava
+    ).setDataStoreFactory(dataStoreFactory).build()
+
+
+    val c = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user")
+
+    val ds = DriveService(c)
+
+  }
+
+  //installed.setClientId(conf.clie)
+
+
+
 
   /*
   import scala.concurrent.duration._

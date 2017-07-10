@@ -8,17 +8,20 @@ trait GApiConfig {
   def httpHost: Option[String]
   def httpPort: Option[Int]
 
-  def oauthEndPoint: Option[String]
-  def tokenEndPoint: Option[String]
+  def authUri: Option[String]
+  def tokenUri: Option[String]
   def redirectUri: Option[String]
   def accessType: Option[String]
   def authPath: Option[String]
   def authCallbackPath: Option[String]
 
+  def clientIdInstalled: Option[String]
+  def clientSecretInstalled: Option[String]
+
   def clientId: String
   def clientSecret: String
   def applicationName: String
-  def scopes: String
+  def scopes: Seq[String]
 
   //db for storing stuff
   def dbProfile: Option[String]
@@ -37,6 +40,10 @@ object GApiConfig {
 }
 
 trait GApiConfigTypeSafeConfig extends GApiConfig{
+
+  import scala.collection.JavaConverters._
+
+
   val config = ConfigFactory.load()
 
   private val httpConfig = config.getConfig("http")
@@ -47,16 +54,32 @@ trait GApiConfigTypeSafeConfig extends GApiConfig{
   val httpPort = Option(httpConfig.getInt("port"))
 
 
-  val oauthEndPoint = Option(google.getString("oauth2EndPoint"))
-  val tokenEndPoint = Option(google.getString("tokenEndPoint"))
+  val authUri = Option(google.getString("authUri"))
+  val tokenUri = Option(google.getString("tokenUri"))
   val clientId = google.getString("client_id")
   val clientSecret = google.getString("client_secret")
   val applicationName = google.getString("applicationName")
   val redirectUri = Option(google.getString("redirect_uri"))
   val accessType = Option(google.getString("access_type"))
-  val scopes = google.getString("scopes")
+
+  val scopes = Option(google.getStringList("scopes")) match {
+    case None => Seq()
+    case Some(l) => l.asScala
+  }
+
   val authPath = Option(google.getString("authPath"))
   val authCallbackPath = Option(google.getString("authCallbackPath"))
+
+  //installed app
+  val clientIdInstalled = Option(google.getConfig("installed")) match {
+    case Some(c) => Some(c.getString("client_id"))
+    case None => None
+  }
+
+  val clientSecretInstalled = Option(google.getConfig("installed")) match {
+    case Some(c) => Some(c.getString("client_secret"))
+    case None => None
+  }
 
   //db stuff
   val dbProfile = Option(slick.getString("profile"))

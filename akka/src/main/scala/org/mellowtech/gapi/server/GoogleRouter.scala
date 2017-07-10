@@ -23,6 +23,7 @@ import scala.util.{Failure, Success, Try}
   */
 
 trait GoogleAuthenticated {
+
   def onAuthenticated(tr: TokenResponse): Unit
 
   def redirect: Option[String] = None
@@ -34,8 +35,6 @@ trait DefaultAuthenticated extends GoogleAuthenticated {
 
   def tokenService: TokenService
 
-  implicit def ec: ExecutionContext
-
   override def onAuthenticated(tr: TokenResponse): Unit = {
     val t = TokenDAO.toToken(tr)
     val r = Await.result(tokenService.put(t), 1 second)
@@ -43,7 +42,6 @@ trait DefaultAuthenticated extends GoogleAuthenticated {
       case x if x > 0 => authenticated.set(true)
       case _ => authenticated.set(false)
     }
-
   }
 
   override val redirect: Option[String] = Some("/")
@@ -63,8 +61,8 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
 
   private def authUrl(state: Option[String]): String = {
     val rUriEncode = URLEncoder.encode(c.redirectUri.get, "UTF-8")
-    val scopesEncode = URLEncoder.encode(c.scopes, "UTF-8")
-    val aUrl = c.oauthEndPoint.get + "?client_id=" + c.clientId + "&redirect_uri=" + rUriEncode + "&response_type=code" +
+    val scopesEncode = URLEncoder.encode(c.scopes.mkString(" "), "UTF-8")
+    val aUrl = c.authUri.get + "?client_id=" + c.clientId + "&redirect_uri=" + rUriEncode + "&response_type=code" +
       "&scope=" + scopesEncode + "&access_type=" + c.accessType.get
     state match {
       case Some(s) => aUrl + "&state=" + URLEncoder.encode(s, "UTF-8")
@@ -84,7 +82,7 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
     path(c.authCallbackPath.get) {
       get {
         parameter("code")(code => {
-          log.debug(s"got code from google...http request to ${c.tokenEndPoint.get}")
+          log.debug(s"got code from google...http request to ${c.tokenUri.get}")
           val params: Map[String, String] = Map(
             "code" -> code,
             "client_id" -> c.clientId,
@@ -93,7 +91,7 @@ class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: 
             "grant_type" -> "authorization_code"
           )
           val formData = FormData(params).toEntity
-          val request = HttpRequest(method = HttpMethods.POST, uri = c.tokenEndPoint.get, entity = formData)
+          val request = HttpRequest(method = HttpMethods.POST, uri = c.tokenUri.get, entity = formData)
           val f = for {
             r <- Http().singleRequest(request)
             tr <- Unmarshal(r.entity).to[TokenResponse]

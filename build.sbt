@@ -51,6 +51,27 @@ lazy val akka = (project in file("akka")).
     }
   ).dependsOn(common)
 
+lazy val localexample = (project in file("localexample")).
+  settings(buildSettings: _*).
+  settings(
+    name := "gapi-localexample",
+    libraryDependencies ++= testDeps,
+    libraryDependencies ++= googleAPIs,
+    libraryDependencies ++= jsonDeps,
+    libraryDependencies += "org.postgresql" % "postgresql" % "42.1.1",
+    publish := false,
+    publishMavenStyle := true,
+    pomIncludeRepository := { _ => false },
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
+    javaOptions in reStart += "-Dconfig.file=/Users/msvens/conf/localexample.conf"
+  ).dependsOn(common,drive)
+
 lazy val serverexample = (project in file("serverexample")).
   settings(buildSettings: _*).
   settings(

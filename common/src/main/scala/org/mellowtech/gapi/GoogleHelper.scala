@@ -1,12 +1,10 @@
-package org.mellowtech.gapi.server
+package org.mellowtech.gapi
 
-import javax.swing.CellRendererPane
-
-import com.google.api.client.json.JsonFactory
 import com.google.api.client.auth.oauth2.{BearerToken, ClientParametersAuthentication, Credential}
 import com.google.api.client.http.{GenericUrl, HttpTransport}
+import com.google.api.client.json.JsonFactory
 import org.mellowtech.gapi.config.GApiConfig
-import org.mellowtech.gapi.model.{Converters, TokenResponse}
+import org.mellowtech.gapi.model.TokenResponse
 import org.mellowtech.gapi.store.{CredentialListener, Token, TokenDAO}
 
 /**
@@ -36,7 +34,7 @@ object GoogleHelper{
       val builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
         .setTransport(transport.get)
         .setJsonFactory(factory.get)
-        .setTokenServerUrl(new GenericUrl(c.tokenEndPoint.get))
+        .setTokenServerUrl(new GenericUrl(c.tokenUri.get))
         .setClientAuthentication(new ClientParametersAuthentication(c.clientId,c.clientSecret))
         if(listener.isDefined) builder.addRefreshListener(listener.get)
         builder.build().setAccessToken(access_token).setRefreshToken(r).setExpiresInSeconds(expires_in)

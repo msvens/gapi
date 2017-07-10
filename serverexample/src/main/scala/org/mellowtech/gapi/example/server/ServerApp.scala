@@ -11,16 +11,17 @@ import akka.http.scaladsl.server.{Directives, ExceptionHandler, Route}
 import akka.stream.scaladsl.StreamConverters
 import akka.stream.{ActorMaterializer, Materializer}
 import com.google.api.client.auth.oauth2.Credential
+import org.mellowtech.gapi.GoogleHelper
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.drive.{Clause, DriveService}
-import org.mellowtech.gapi.server.{DefaultAuthenticated, GoogleHelper, GoogleRouter}
+import org.mellowtech.gapi.server.{DefaultAuthenticated, GoogleRouter}
 import org.mellowtech.gapi.service.GApiException
 import org.mellowtech.gapi.store.{CredentialListener, DbService, TokenDAO, TokenService}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class ServerCallback(val tokenService: TokenService)(implicit val ec: ExecutionContext) extends DefaultAuthenticated with CredentialListener {
+class ServerCallback(val tokenService: TokenService) extends DefaultAuthenticated with CredentialListener {
 
   val hasDrive: AtomicBoolean = new AtomicBoolean(false)
   var gdrive: Option[DriveService] = None
