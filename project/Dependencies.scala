@@ -10,10 +10,10 @@ object Dependencies {
 
 
   //logging
-  //val slf4j = "org.slf4j" % "slf4j-api" % "1.7.16"
+  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
   val logback ="ch.qos.logback" % "logback-classic" % "1.2.3"
 
-  val commonAPIs = Seq(typesafeConf,logback)
+  val commonAPIs = Seq(typesafeConf,slf4j)
 
   //for testing
   val junit = "junit" % "junit" % "4.12" % "test"
@@ -25,8 +25,8 @@ object Dependencies {
 
   //val json4s = "org.json4s" %% "json4s-native" % json4sVersion
   //val json4sext = "org.json4s" %% "json4s-ext" % json4sVersion
-  val upickle = "com.lihaoyi" %% "upickle" % "0.4.4"
-  val jsonDeps = Seq(upickle)
+  //val upickle = "com.lihaoyi" %% "upickle" % "0.4.4"
+  //val jsonDeps = Seq(upickle)
 
   //google apis
   val driveAPI = "com.google.apis" % "google-api-services-drive" % "v3-rev72-1.22.0"
@@ -37,18 +37,21 @@ object Dependencies {
 
   //akka-http apis
 
-  val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % "2.4.17"
-  val akkaHttp = "de.heikoseeberger" %% "akka-http-upickle" % "1.16.0"
+  //val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % "2.4.17"
+  //val akkaHttp = "de.heikoseeberger" %% "akka-http-upickle" % "1.17.0"
+  val akkaHttp = "com.typesafe.akka" %% "akka-http" % "10.0.9"
+  val akkaHttpJson = "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.9"
 
-  val akkaAPIs = Seq(akkaHttp, akkaSlf4j)
+  val akkaAPIs = Seq(akkaHttp, akkaHttpJson)
 
 
 
   //slick
-  val slick = "com.typesafe.slick" %% "slick" % "3.2.0"
-  val slickSlf4j = "org.slf4j" % "slf4j-nop" % "1.6.4"
-  val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % "3.2.0"
+  val slick = "com.typesafe.slick" %% "slick" % "3.2.1"
+  //val slickSlf4j = "org.slf4j" % "slf4j-nop" % "1.6.4"
+  val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % "3.2.1"
 
-  val slickDeps = Seq(slick,slickSlf4j,slickHikari)
+  //val slickDeps = Seq(slick,slickSlf4j,slickHikari)
+  val slickDeps = Seq(slick, slickHikari)
 
 }

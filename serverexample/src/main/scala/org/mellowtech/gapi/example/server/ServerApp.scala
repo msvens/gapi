@@ -117,7 +117,7 @@ object ServerApp{
       path("about") {
         val gdrive = serverCallback.gdrive.get
         val fa = gdrive.aboutAll
-        onSuccess(fa){a => println(a.toPrettyString); toUtf(Pages.about(a).render)}// {a => complete(a.getUser.getDisplayName)}
+        onSuccess(fa){a => toUtf(Pages.about(a).render)}// {a => complete(a.getUser.getDisplayName)}
       } ~
       path("upload") {
         get{

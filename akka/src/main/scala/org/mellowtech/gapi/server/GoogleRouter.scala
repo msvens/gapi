@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -13,9 +14,15 @@ import akka.stream.Materializer
 import org.mellowtech.gapi.config.GApiConfig
 import org.mellowtech.gapi.model.TokenResponse
 import org.mellowtech.gapi.store.{TokenDAO, TokenService}
+import spray.json._
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
+
+
+trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
+  implicit val tokenResponseFormat = jsonFormat4(TokenResponse)
+}
 
 /**
   * @author msvens
@@ -47,17 +54,16 @@ trait DefaultAuthenticated extends GoogleAuthenticated {
   override val redirect: Option[String] = Some("/")
 
   val authenticated: AtomicBoolean = new AtomicBoolean(false)
-
-
 }
 
-class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem, implicit val m: Materializer, implicit val executor: ExecutionContext, implicit val c: GApiConfig)  {
+class GoogleRouter(val callback: GoogleAuthenticated)(implicit val actorSystem: ActorSystem,
+                                                      implicit val m: Materializer,
+                                                      implicit val executor: ExecutionContext,
+                                                      implicit val c: GApiConfig) extends JsonSupport {
 
   implicit val log: LoggingAdapter = Logging(actorSystem, getClass)
 
   import Directives._
-  import de.heikoseeberger.akkahttpupickle.UpickleSupport._
-  import upickle.default._
 
   private def authUrl(state: Option[String]): String = {
     val rUriEncode = URLEncoder.encode(c.redirectUri.get, "UTF-8")

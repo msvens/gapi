@@ -1,6 +1,6 @@
 package org.mellowtech.gapi.config
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 
 trait GApiConfig {
 
@@ -23,11 +23,14 @@ trait GApiConfig {
   def applicationName: String
   def scopes: Seq[String]
 
+  def slick: Option[Config]
   //db for storing stuff
-  def dbProfile: Option[String]
+  //def slickConfig: Option[Config]
+  /*def dbProfile: Option[String]
   def dbUrl: Option[String]
   def dbUser: Option[String]
   def dbPassword: Option[String]
+  */
   /*db {
     url = "jdbc:postgresql://localhost/testdb"
     user = "test"
@@ -48,7 +51,7 @@ trait GApiConfigTypeSafeConfig extends GApiConfig{
 
   private val httpConfig = config.getConfig("http")
   private val google = config.getConfig("google")
-  private val slick = config.getConfig("slick")
+  val slick: Option[Config] = Some(config.getConfig("slick"))
 
   val httpHost = Option(httpConfig.getString("host"))
   val httpPort = Option(httpConfig.getInt("port"))
@@ -82,9 +85,10 @@ trait GApiConfigTypeSafeConfig extends GApiConfig{
   }
 
   //db stuff
-  val dbProfile = Option(slick.getString("profile"))
+  /*val dbProfile = Option(slick.getString("profile"))
   val dbUrl = Option(slick.getString("url"))
   val dbUser = Option(slick.getString("user"))
   val dbPassword = Option(slick.getString("password"))
+  */
 
 }
