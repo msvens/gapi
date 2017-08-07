@@ -3,55 +3,49 @@ import Keys._
 
 object Dependencies {
 
+  //Version numbers
   val json4sVersion = "3.5.2"
+  val akkaHttpVersion = "10.0.9"
+  val akkaVersion = "2.4.19"
+  val slickVersion = "3.2.1"
+  val googleDriveAPIVersion = "v3-rev80-1.22.0"
+  val googleApiVersion = "1.22.0"
+  val googleHttpVersion = "1.22.0"
+  val googleOauthVersion = "1.22.0"
+  val slf4jVersion = "1.7.25"
+  val logbackVersion = "1.2.3"
+  val typesafeConfigVersion = "1.3.1"
+  val scalaReflectVersion = "2.12.1"
+  val postgresqlVersion = "42.1.1"
+  val scalatagsVersion = "0.6.5"
 
 
-  val typesafeConf = "com.typesafe" % "config" % "1.3.1"
+  //artifacts
 
-
-  //logging
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
-  val logback ="ch.qos.logback" % "logback-classic" % "1.2.3"
-
-  val commonAPIs = Seq(typesafeConf,slf4j)
-
-  //for testing
-  val junit = "junit" % "junit" % "4.12" % "test"
+  val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
+  val akkaHttpJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
+  val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
+  val googleApi = "com.google.api-client" % "google-api-client" % googleApiVersion
+  val googleDriveApi = "com.google.apis" % "google-api-services-drive" % googleDriveAPIVersion
+  val googleOauthClient = "com.google.oauth-client" % "google-oauth-client-jetty" % googleApiVersion
+  val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
+  val logback ="ch.qos.logback" % "logback-classic" % logbackVersion
+  val postgresql = "org.postgresql" % "postgresql" % postgresqlVersion
+  val scalaReflect = "org.scala-lang" % "scala-reflect" % scalaReflectVersion
+  val scalatags = "com.lihaoyi" %% "scalatags" % scalatagsVersion
   val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
-  val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % "test"
-  val testDeps = Seq(junit,scalatest,pegdown)
+  val slickCore = "com.typesafe.slick" %% "slick" % slickVersion
+  val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+  val typesafeConf = "com.typesafe" % "config" % typesafeConfigVersion
 
-  //google related
-
-  //val json4s = "org.json4s" %% "json4s-native" % json4sVersion
-  //val json4sext = "org.json4s" %% "json4s-ext" % json4sVersion
-  //val upickle = "com.lihaoyi" %% "upickle" % "0.4.4"
-  //val jsonDeps = Seq(upickle)
-
-  //google apis
-  val driveAPI = "com.google.apis" % "google-api-services-drive" % "v3-rev72-1.22.0"
-  val httpClientJackson = "com.google.http-client" % "google-http-client-jackson2" % "1.22.0"
-  val oathClientJetty = "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0"
-
-  val googleAPIs = Seq(driveAPI,httpClientJackson,oathClientJetty)
-
-  //akka-http apis
-
-  //val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % "2.4.17"
-  //val akkaHttp = "de.heikoseeberger" %% "akka-http-upickle" % "1.17.0"
-  val akkaHttp = "com.typesafe.akka" %% "akka-http" % "10.0.9"
-  val akkaHttpJson = "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.9"
-
-  val akkaAPIs = Seq(akkaHttp, akkaHttpJson)
+  //project dependencies
+  val akkaDeps = Seq(scalatest,akkaHttp,akkaHttpJson)
+  val commonDeps = Seq(scalatest,googleApi,googleOauthClient,typesafeConf,scalaReflect,slickCore,slickHikari)
+  val driveDeps = Seq(scalatest,googleDriveApi)
+  val serverexampleDeps = Seq(scalatest,postgresql,akkaHttp,akkaSlf4j,logback,scalatags)
+  val localexampleDeps = Seq(scalatest,postgresql,logback)
 
 
-
-  //slick
-  val slick = "com.typesafe.slick" %% "slick" % "3.2.1"
-  //val slickSlf4j = "org.slf4j" % "slf4j-nop" % "1.6.4"
-  val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % "3.2.1"
-
-  //val slickDeps = Seq(slick,slickSlf4j,slickHikari)
-  val slickDeps = Seq(slick, slickHikari)
+  //val httpClientJackson = "com.google.http-client" % "google-http-client-jackson2" % googleHttpVersion
 
 }

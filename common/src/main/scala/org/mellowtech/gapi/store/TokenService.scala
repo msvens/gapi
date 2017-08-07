@@ -3,7 +3,7 @@ package org.mellowtech.gapi.store
 
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import java.time.temporal.{ChronoUnit, TemporalUnit}
+import java.time.temporal.{ChronoUnit}
 
 import org.mellowtech.gapi.model.TokenResponse
 

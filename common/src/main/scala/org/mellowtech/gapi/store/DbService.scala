@@ -1,6 +1,5 @@
 package org.mellowtech.gapi.store
 
-import com.typesafe.config.{Config, ConfigFactory}
 import org.mellowtech.gapi.config.GApiConfig
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile

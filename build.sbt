@@ -6,7 +6,6 @@ lazy val buildSettings = Seq(
   version := "0.1-SNAPSHOT",
   organization := "org.mellowtech",
   scalaVersion := "2.12.1",
-  libraryDependencies ++= commonAPIs,
   publishArtifact in Test := false,
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/site/test-reports")
 )
@@ -16,11 +15,7 @@ lazy val common = (project in file("common")).
   settings(buildSettings: _*).
   settings(
     name := "gapi-common",
-    libraryDependencies ++= testDeps,
-    libraryDependencies += typesafeConf,
-    libraryDependencies ++= googleAPIs,
-    libraryDependencies ++= slickDeps,
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.1",
+    libraryDependencies ++= commonDeps,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {
@@ -36,9 +31,7 @@ lazy val akka = (project in file("akka")).
   settings(buildSettings: _*).
   settings(
     name := "gapi-server",
-    libraryDependencies ++= testDeps,
-    libraryDependencies ++= googleAPIs,
-    libraryDependencies ++= akkaAPIs,
+    libraryDependencies ++= akkaDeps,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {
@@ -54,9 +47,7 @@ lazy val localexample = (project in file("localexample")).
   settings(buildSettings: _*).
   settings(
     name := "gapi-localexample",
-    libraryDependencies ++= testDeps,
-    libraryDependencies ++= googleAPIs,
-    libraryDependencies += "org.postgresql" % "postgresql" % "42.1.1",
+    libraryDependencies ++= localexampleDeps,
     publish := false,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
@@ -74,13 +65,7 @@ lazy val serverexample = (project in file("serverexample")).
   settings(buildSettings: _*).
   settings(
     name := "gapi-serverexample",
-    libraryDependencies ++= testDeps,
-    libraryDependencies ++= googleAPIs,
-    libraryDependencies ++= akkaAPIs,
-    libraryDependencies += "org.postgresql" % "postgresql" % "42.1.1",
-    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.6.5",
-    libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.4.19",
-    libraryDependencies += logback,
+    libraryDependencies ++= serverexampleDeps,
       publish := false,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
@@ -99,8 +84,7 @@ lazy val drive = (project in file("drive")).
   settings(buildSettings: _*).
   settings(
     name := "gapi-drive",
-    libraryDependencies ++= testDeps,
-    libraryDependencies ++= googleAPIs,
+    libraryDependencies ++= driveDeps,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {
