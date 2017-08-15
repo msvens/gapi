@@ -62,7 +62,7 @@ object ServerApp{
     Http().bindAndHandle(authRoute ~ gAuth.route ~ defRoute, conf.httpHost.get, conf.httpPort.get)
   }
 
-  def drive = serverCallback.gdrive.get
+  def drive: DriveService = serverCallback.gdrive.get
 
   def initGoogleServices: Unit = {
     //First try to create a drive-service if we already have credentials

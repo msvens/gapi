@@ -16,6 +16,7 @@ object Dependencies {
   val logbackVersion = "1.2.3"
   val typesafeConfigVersion = "1.3.1"
   val scalaReflectVersion = "2.12.1"
+  val scalatestVersion = "3.0.1"
   val postgresqlVersion = "42.1.1"
   val scalatagsVersion = "0.6.5"
 
@@ -33,7 +34,7 @@ object Dependencies {
   val postgresql = "org.postgresql" % "postgresql" % postgresqlVersion
   val scalaReflect = "org.scala-lang" % "scala-reflect" % scalaReflectVersion
   val scalatags = "com.lihaoyi" %% "scalatags" % scalatagsVersion
-  val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+  val scalatest = "org.scalatest" %% "scalatest" % scalatestVersion % "test"
   val slickCore = "com.typesafe.slick" %% "slick" % slickVersion
   val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
   val typesafeConf = "com.typesafe" % "config" % typesafeConfigVersion
