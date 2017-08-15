@@ -15,10 +15,11 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val logbackVersion = "1.2.3"
   val typesafeConfigVersion = "1.3.1"
-  val scalaReflectVersion = "2.12.1"
-  val scalatestVersion = "3.0.1"
+  val scalaReflectVersion = "2.12.2"
+  val scalatestVersion = "3.0.3"
   val postgresqlVersion = "42.1.1"
   val scalatagsVersion = "0.6.5"
+  val pegdownVersion = "1.6.0"
 
 
   //artifacts
@@ -31,6 +32,7 @@ object Dependencies {
   val googleOauthClient = "com.google.oauth-client" % "google-oauth-client-jetty" % googleApiVersion
   val slf4j = "org.slf4j" % "slf4j-api" % slf4jVersion
   val logback ="ch.qos.logback" % "logback-classic" % logbackVersion
+  val pegdown = "org.pegdown" % "pegdown" % pegdownVersion % "test"
   val postgresql = "org.postgresql" % "postgresql" % postgresqlVersion
   val scalaReflect = "org.scala-lang" % "scala-reflect" % scalaReflectVersion
   val scalatags = "com.lihaoyi" %% "scalatags" % scalatagsVersion
@@ -40,11 +42,11 @@ object Dependencies {
   val typesafeConf = "com.typesafe" % "config" % typesafeConfigVersion
 
   //project dependencies
-  val akkaDeps = Seq(scalatest,akkaHttp,akkaHttpJson)
-  val commonDeps = Seq(scalatest,googleApi,googleOauthClient,typesafeConf,scalaReflect,slickCore,slickHikari)
-  val driveDeps = Seq(scalatest,googleDriveApi)
-  val serverexampleDeps = Seq(scalatest,postgresql,akkaHttp,akkaSlf4j,logback,scalatags)
-  val localexampleDeps = Seq(scalatest,postgresql,logback)
+  val akkaDeps = Seq(scalatest, pegdown, akkaHttp,akkaHttpJson)
+  val commonDeps = Seq(scalatest,pegdown,googleApi,googleOauthClient,typesafeConf,scalaReflect,slickCore,slickHikari)
+  val driveDeps = Seq(scalatest,pegdown,googleDriveApi)
+  val serverexampleDeps = Seq(scalatest,pegdown,postgresql,akkaHttp,akkaSlf4j,logback,scalatags)
+  val localexampleDeps = Seq(scalatest,pegdown,postgresql,logback)
 
 
   //val httpClientJackson = "com.google.http-client" % "google-http-client-jackson2" % googleHttpVersion
