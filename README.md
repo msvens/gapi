@@ -19,9 +19,9 @@ GAPI also simplifies the auth process for installed applications and akka-http b
 
 ### Authenticate from a server
 
-Check out the full source code in [serverexample/src/main/scala/org/mellowtech/gapi/example/server/ServerApp.scala](ServerApp.scala)
+Check out the full source code in [ServerApp.scala](serverexample/src/main/scala/org/mellowtech/gapi/example/server/ServerApp.scala)
 
-The following description assumes familiarity with [http://doc.akka.io/docs/akka-http/current/scala/http/index.html](akka-http)
+The following description assumes familiarity with [akka-http](http://doc.akka.io/docs/akka-http/current/scala/http/index.html)
 
 First we create a an object that will serve as our example akka server.
 
@@ -108,13 +108,13 @@ The final thing is to create a main method and bind our routes to our akka http 
   }
 ```
 
-For the actual routes please check the example source code [serverexample/src/main/scala/org/mellowtech/gapi/example/server/ServerApp.scala](ServerApp.scala)
+For the actual routes please check the example source code [ServerApp.scala](serverexample/src/main/scala/org/mellowtech/gapi/example/server/ServerApp.scala)
 
 ### Authenticate from an installed application
 
 Authentication from an installed application is simpler since we can rely on the APIs provided by google.
 
-You can use the helper [common/src/main/scala/org/mellowtech/gapi/Installed.scala](Installed.scala) to get away
+You can use the helper [Installed.scala](common/src/main/scala/org/mellowtech/gapi/Installed.scala) to get away
 with almost all boiler plate. To create an application that lists your google drive root you can do this:
 
 ```scala
