@@ -39,8 +39,8 @@ object ServerApp {
 }
 ```
 
-Next we instantiate our data base service. This is needed to store tokens. Also observe that it uses slick.
-See configuration above
+Next we instantiate our database service. This is needed to store tokens. GApi uses slick so you need to provide a
+slick configuration (see above).
 
 ```scala
 val dbService = new DbService
@@ -59,7 +59,7 @@ val serverCallback = new ServerCallback(tokenDAO)
 val gAuth = new GoogleRouter(serverCallback)
 ```
 
-Although not strictly needed it can be a good idea to setup your own exception handler for your akka routes if 
+Although not strictly needed it can be a good idea to setup your own exception handler for your akka routes in case 
 you want to handle any GAPI Exception separately. This can be done like so
 
 ```scala
@@ -75,7 +75,7 @@ val gApiExceptionHandler = ExceptionHandler {
   }
 ```
 
-Next we need to setup an initialise the specifc google service we want to use (in this cas drive).
+Next we need to setup an initialise the specific google service we want to use (in this case drive).
 
 ```scala
   def drive: DriveService = serverCallback.gdrive.get
