@@ -15,7 +15,11 @@ GAPI also simplifies the auth process for installed applications and akka-http b
 
 ### Installation
 
+TBW
+
 ### Configuration
+
+TBW
 
 ### Authenticate from a server
 
