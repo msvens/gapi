@@ -48,7 +48,7 @@ lazy val localexample = (project in file("localexample")).
   settings(
     name := "gapi-localexample",
     libraryDependencies ++= localexampleDeps,
-    publish := false,
+    publishArtifact := false,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {
@@ -66,7 +66,7 @@ lazy val serverexample = (project in file("serverexample")).
   settings(
     name := "gapi-serverexample",
     libraryDependencies ++= serverexampleDeps,
-      publish := false,
+    publishArtifact := false,
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
     publishTo := {
@@ -101,5 +101,5 @@ lazy val drive = (project in file("drive")).
 lazy val root = (project in file(".")).aggregate(common,akka,drive).
   settings(buildSettings: _*).
   settings(
-    publish := false
+    publishArtifact := false
   )

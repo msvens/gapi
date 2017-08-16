@@ -1,9 +1,9 @@
 # GAPI #
 
-<!---
-[![Build Status](https://travis-ci.org/msvens/gapi.svg?branch=master)](https://travis-ci.org/msvens/<projectname>)
+
+[![Build Status](https://travis-ci.org/msvens/gapi.svg?branch=master)](https://travis-ci.org/msvens/gapi)
 [![Maven Central](https://img.shields.io/maven-central/v/org.mellowtech/gapi_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.mellowtech/gapi_2.12)
---->
+
 
 ## Overview
 
